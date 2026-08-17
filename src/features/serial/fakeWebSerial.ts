@@ -33,7 +33,11 @@ export function installFakeWebSerial() {
   // 站號 0 = 廣播；模擬器裡站號就是本地 id（尚未被 SET_ADVANCED 改過時）
   const targetIds = (station: number) => (station === 0 ? [...LAMP_IDS] : LAMP_IDS.includes(station) ? [station] : []);
 
-  /** 指令格式見 README.txt：`CMD(參數1,參數2,...)`，一行一個指令 */
+  /**
+   * 指令格式見 docs/PROTOCOL.md v4 草案：`CMD(參數1,參數2,...)`，一行一個指令。
+   * v4 把 SET_SET 改名 SET_PARAMETER、SV/M_A/NUN 收進 SET_MAIN，見 commands.ts 的
+   * SetMainParams/SetParameterParams 說明。
+   */
   const handleCommand = (line: string) => {
     const match = line.trim().match(/^([A-Z_]+)\(([^)]*)\)$/);
     if (!match) return; // 無法解析的行直接忽略(協定規定)
@@ -47,23 +51,27 @@ export function installFakeWebSerial() {
     for (const id of ids) {
       switch (cmd) {
         case 'SET_MAIN':
-          simulator.setRun(id, rest[0] === '0'); // ON:0/OFF:1
+          simulator.setMain(id, {
+            on: rest[0] === '0', // ON:0/OFF:1
+            sv: Number(rest[1]),
+            controlMode: Number(rest[2]),
+            nUn: Number(rest[3]),
+          });
           break;
-        case 'SET_SET':
-          // rest[11] 是 M_A（見 commands.ts 的 SetSetParams 說明），模擬器目前不吃這個欄位，先跳過
-          simulator.setSet(id, {
-            al1: Number(rest[0]),
-            al2: Number(rest[1]),
-            autoTune: Number(rest[2]),
-            offset: Number(rest[3]),
-            p: Number(rest[4]),
-            i: Number(rest[5]),
-            d: Number(rest[6]),
-            gain: Number(rest[7]),
-            sensorType: Number(rest[8]),
-            unit: Number(rest[9]),
-            decimal: Number(rest[10]),
-            sv: Number(rest[12]),
+        case 'SET_PARAMETER':
+          simulator.setParameter(id, {
+            sensorType: Number(rest[0]),
+            unit: Number(rest[1]),
+            decimal: Number(rest[2]),
+            sht: Number(rest[3]),
+            autoTune: Number(rest[4]),
+            offset: Number(rest[5]),
+            p: Number(rest[6]),
+            i: Number(rest[7]),
+            d: Number(rest[8]),
+            gain: Number(rest[9]),
+            al1: Number(rest[10]),
+            al2: Number(rest[11]),
           });
           break;
         case 'SET_ADVANCED':
@@ -72,8 +80,6 @@ export function installFakeWebSerial() {
             commMode: Number(rest[1]),
             baudRate: Number(rest[2]),
             format: Number(rest[3]),
-            controlMode: Number(rest[4]),
-            nUn: Number(rest[5]),
           });
           break;
       }

@@ -3,33 +3,51 @@ import { commandText, describeCommand, lockedAdvancedFields } from './commands';
 import { initLampStatus } from './constants';
 import type { LampStatus } from './types';
 
-describe('commandText.setAdvanced', () => {
-  const BASE = { newStation: 1, commMode: 0, format: 2, controlMode: 0, nUn: 0 };
+describe('commandText.setMain', () => {
+  it('組出 5 參數：currentID,ON_OFF,SV,M_A,NUN（v4 草案，見 SetMainParams 的說明）', () => {
+    expect(commandText.setMain(1, { on: true, sv: 150, controlMode: 0, nUn: 0 })).toBe('SET_MAIN(1,0,150,0,0)');
+    expect(commandText.setMain(1, { on: false, sv: 100, controlMode: 1, nUn: 50 })).toBe('SET_MAIN(1,1,100,1,50)');
+  });
+});
 
-  it('BPS 送的是實際 bps，不是下拉選單索引——README.txt 範例 SET_ADVANCED(1,1,0,9600,2,0,0) 的第 4 個參數是 9600', () => {
-    expect(commandText.setAdvanced(1, { ...BASE, baudRate: 0 })).toBe('SET_ADVANCED(1,1,0,9600,2,0,0)');
+describe('commandText.setParameter', () => {
+  it('組出 13 參數：currentID,INT,UNT,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2（v4 草案，原 SET_SET）', () => {
+    const params = {
+      sensorType: 1, unit: 0, decimal: 0, sht: 0,
+      autoTune: 0, offset: 0, p: 6, i: 120, d: 30, gain: 1.0,
+      al1: 50, al2: 50,
+    };
+    expect(commandText.setParameter(1, params)).toBe('SET_PARAMETER(1,1,0,0,0,0,0,6,120,30,1,50,50)');
+  });
+});
+
+describe('commandText.setAdvanced', () => {
+  const BASE = { newStation: 1, commMode: 0, format: 2 };
+
+  it('組出 5 參數（v4 草案拿掉 M_A/NUN，見 SetAdvancedParams 的說明）；BPS 送的是實際 bps，不是下拉選單索引', () => {
+    expect(commandText.setAdvanced(1, { ...BASE, baudRate: 0 })).toBe('SET_ADVANCED(1,1,0,9600,2)');
   });
 
   it('索引 1/2 分別轉成 19200/38400', () => {
-    expect(commandText.setAdvanced(1, { ...BASE, baudRate: 1 })).toBe('SET_ADVANCED(1,1,0,19200,2,0,0)');
-    expect(commandText.setAdvanced(1, { ...BASE, baudRate: 2 })).toBe('SET_ADVANCED(1,1,0,38400,2,0,0)');
+    expect(commandText.setAdvanced(1, { ...BASE, baudRate: 1 })).toBe('SET_ADVANCED(1,1,0,19200,2)');
+    expect(commandText.setAdvanced(1, { ...BASE, baudRate: 2 })).toBe('SET_ADVANCED(1,1,0,38400,2)');
   });
 });
 
 describe('describeCommand', () => {
-  it('SET_SET 標註成 14 個具名欄位（含 M_A，見 SetSetParams 的說明）', () => {
-    expect(describeCommand('SET_SET(1,50,50,0,0,6,120,30,1.0,1,0,0,0,100)')).toBe(
-      'currentID=1, AL1=50, AL2=50, AT=0, TU=0, P=6, I=120, D=30, GAIN=1.0, INT=1, UNT=0, DP=0, M_A=0, SV=100',
+  it('SET_PARAMETER 標註成 13 個具名欄位（原 SET_SET，見 SetParameterParams 的說明）', () => {
+    expect(describeCommand('SET_PARAMETER(1,1,0,0,0,0,0,6,120,30,1.0,50,50)')).toBe(
+      'currentID=1, INT=1, UNT=0, DP=0, SHT=0, AT=0, TU=0, P=6, I=120, D=30, GAIN=1.0, AL1=50, AL2=50',
     );
   });
 
-  it('SET_MAIN 標註成 2 個具名欄位', () => {
-    expect(describeCommand('SET_MAIN(1,0)')).toBe('currentID=1, ON_OFF=0');
+  it('SET_MAIN 標註成 5 個具名欄位', () => {
+    expect(describeCommand('SET_MAIN(1,0,150,0,0)')).toBe('currentID=1, ON_OFF=0, SV=150, M_A=0, NUN=0');
   });
 
-  it('SET_ADVANCED 標註成 7 個具名欄位', () => {
-    expect(describeCommand('SET_ADVANCED(1,1,0,9600,2,0,0)')).toBe(
-      'currentID=1, newID=1, RS=0, BPS=9600, BIT=2, M_A=0, NUN=0',
+  it('SET_ADVANCED 標註成 5 個具名欄位', () => {
+    expect(describeCommand('SET_ADVANCED(1,1,0,9600,2)')).toBe(
+      'currentID=1, newID=1, RS=0, BPS=9600, BIT=2',
     );
   });
 

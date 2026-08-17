@@ -35,12 +35,34 @@
       </div>
     </div>
 
+    <div class="panel-divider"><span>控制設定</span></div>
+    <el-form label-width="110px" class="control-form">
+      <el-form-item label="設定溫度">
+        <el-input-number
+          v-model="controlForm.sv"
+          :min="SV_MIN"
+          :max="SV_MAX"
+          :step="svStep"
+          :precision="svPrecision"
+          class="w-full max-w-260px"
+        />
+      </el-form-item>
+      <el-form-item label="控制模式選擇">
+        <el-select v-model="controlForm.controlMode" class="w-full max-w-260px">
+          <el-option v-for="opt in CONTROL_MODES" :key="opt.value" :label="opt.label" :value="opt.value" />
+        </el-select>
+      </el-form-item>
+      <!-- 自動模式下不顯示這個欄位；送出時 store.writeMain 會把 NUN 覆寫成 -1，見 store.ts 說明 -->
+      <el-form-item v-if="isManualControl" label="手動輸出量">
+        <el-input-number v-model="controlForm.nUn" :min="0" :max="100" class="w-full max-w-260px" />
+      </el-form-item>
+    </el-form>
+
     <div class="panel-divider"><span>輸出與警報監控</span></div>
     <div class="io-row">
       <div class="io-group">
         <span class="io-group-label">輸出</span>
         <span class="led" :class="{ 'led-green is-lit': isBitOn(status?.STATUS, STATUS_BITS.OUT1) }"><i class="led-dot" />OUT1</span>
-        <span class="led" :class="{ 'led-green is-lit': isBitOn(status?.STATUS, STATUS_BITS.OUT2) }"><i class="led-dot" />OUT2</span>
       </div>
       <div class="io-group">
         <span class="io-group-label">警報</span>
@@ -55,24 +77,84 @@
       <span class="metric-value">{{ alarmText }}</span>
     </div>
   </el-card>
+
+  <SaveBar :hint="runCommandView" @save="saveControl">套用到溫控器 {{ activeLampId }}</SaveBar>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { useSerialStore } from '@/features/serial/store';
 import { activeLampId } from '@/features/serial/activeLamp';
 import { STATUS_BITS, activeAlarmCodes, hasBit } from '@/features/serial/alarmStatus';
-import { tempUnitLabel } from '@/features/serial/constants';
+import { tempUnitLabel, SV_MIN, SV_MAX } from '@/features/serial/constants';
 import { commandHintView } from '@/shared/settingsShared';
+import SaveBar from '@/shared/components/SaveBar.vue';
 
 const store = useSerialStore();
 
 const active = computed(() => store.isConnected || store.isSimulating);
 const status = computed(() => store.lamps[activeLampId.value]);
 const unitLabel = computed(() => tempUnitLabel(status.value?.UNT));
-const runCommandView = computed(() => commandHintView(store.commands[activeLampId.value]?.run));
+// CommandType 'main' 涵蓋 Run/Stop、設定溫度、控制模式/手動輸出量，見 commandTracker.ts 的說明
+const runCommandView = computed(() => commandHintView(store.commands[activeLampId.value]?.main));
 
 const fmt = (v: number | null | undefined) => (v !== null && v !== undefined ? String(v) : '--');
+
+// pptx slide 1 的 (2)(3)(4)：設定溫度／控制模式選擇／手動輸出量，畫在主畫面，見 docs/DEVICE-CHECKLIST.md H 節
+const CONTROL_MODES = ['自動', '手動'].map((label, value) => ({ label, value }));
+
+const controlForm = reactive({ sv: 0, controlMode: 0, nUn: 0 });
+const isManualControl = computed(() => controlForm.controlMode === 1);
+
+// 設定溫度輸入框的小數位跟著這支燈管目前回報的 DP 走，跟主畫面顯示同一套規則，見 constants.ts formatTempValue
+const svPrecision = computed(() => (status.value?.DP === 1 ? 1 : 0));
+const svStep = computed(() => (status.value?.DP === 1 ? 0.5 : 1));
+
+/**
+ * 帶入該燈管最新收到的一行資料，不用另外的讀取指令（協定持續每台一行回報全部欄位）。
+ * 只在切換分頁當下讀一次快照，之後不會被之後才到的新資料覆蓋——避免使用者編輯到一半被蓋掉。
+ */
+const prefillFromDevice = (id: number) => {
+  const lamp = store.lamps[id];
+  Object.assign(controlForm, {
+    sv: lamp?.SV ?? 0,
+    controlMode: lamp?.M_A ?? 0,
+    nUn: lamp?.NUN ?? 0,
+  });
+};
+
+// 這個面板是應用程式一開始就掛載的主畫面，切換分頁當下資料很可能還沒進來（連線/模擬都是非同步），
+// 跟 SettingsPage.vue／AdvancedSettingsPage.vue 那種「使用者主動點進頁面時資料通常已經在跑」的情境
+// 不同。因此除了切換分頁當下先讀一次，還要等這支燈管「第一次真的收到資料」時再補讀一次快照，
+// 避免定格在 0；拿到之後就不再追蹤，維持原本「不蓋掉使用者編輯到一半的值」的行為。
+let pendingSnapshotId: number | null = null;
+
+watch(
+  activeLampId,
+  id => {
+    pendingSnapshotId = id;
+    prefillFromDevice(id);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => status.value?.SV,
+  sv => {
+    if (pendingSnapshotId !== activeLampId.value) return; // 已經拿過正式快照，不要再蓋
+    if (sv === null || sv === undefined) return; // 還沒收到資料
+    prefillFromDevice(activeLampId.value);
+    pendingSnapshotId = null;
+  },
+);
+
+const saveControl = () => {
+  store.writeMain(activeLampId.value, {
+    sv: controlForm.sv,
+    controlMode: controlForm.controlMode,
+    nUn: isManualControl.value ? controlForm.nUn : -1,
+  });
+};
 
 // STATUS 是 Bit Mask，bit 為 1 代表該路 ON，見 src/features/serial/alarmStatus.ts
 const isBitOn = hasBit;

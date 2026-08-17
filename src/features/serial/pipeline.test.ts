@@ -27,9 +27,11 @@ function wire() {
   return { state, decoder, tracker, simulator };
 }
 
-const DEFAULT_SET: Parameters<ReturnType<typeof createSimulator>['setSet']>[1] = {
+// v4 草案：SV/M_A/NUN 收進 SET_MAIN，SET_SET 改名 SET_PARAMETER 且拿掉 M_A/SV、新增 SHT，
+// 見 commands.ts 的 SetMainParams/SetParameterParams 說明。
+const DEFAULT_PARAMETER: Parameters<ReturnType<typeof createSimulator>['setParameter']>[1] = {
   al1: 50, al2: 50, autoTune: 0, offset: 0, p: 5, i: 120, d: 30, gain: 1.0,
-  sensorType: 1, unit: 0, decimal: 0, sv: 95,
+  sensorType: 1, unit: 0, decimal: 0, sht: 0,
 };
 
 describe('模擬器 → 解析 → 燈管狀態', () => {
@@ -51,12 +53,12 @@ describe('模擬器 → 解析 → 燈管狀態', () => {
     simulator.stop();
   });
 
-  it('SET_SET 寫入的 SV 會由回報值反映出來', () => {
+  it('SET_MAIN 寫入的 SV 會由回報值反映出來', () => {
     const { state, simulator } = wire();
     simulator.start(true);
     vi.advanceTimersByTime(1000);
 
-    simulator.setSet(2, { ...DEFAULT_SET, sv: 95 });
+    simulator.setMain(2, { on: true, sv: 95, controlMode: 0, nUn: -1 });
     vi.advanceTimersByTime(1000);
 
     expect(state.lamps.value[2]?.SV).toBe(95);
@@ -80,7 +82,7 @@ describe('模擬器 → 解析 → 燈管狀態', () => {
     simulator.start(true);
     vi.advanceTimersByTime(3000);
 
-    simulator.setRun(3, false);
+    simulator.setMain(3, { on: false, sv: 80, controlMode: 0, nUn: -1 });
     vi.advanceTimersByTime(1000);
 
     expect(state.lamps.value[3]?.ON_OFF).toBe(1); // OFF:1
@@ -94,8 +96,7 @@ describe('模擬器 → 解析 → 燈管狀態', () => {
     vi.advanceTimersByTime(1000);
 
     state.setStation(4, 40);
-    // 自動模式（controlMode:0）NUN 必須是 -1，不然會被模擬器當成 SET_ERROR 整道拒絕，見下面 describe('SET_ERROR/SET_OK')
-    simulator.setAdvanced(4, { newStation: 40, commMode: 0, baudRate: 0, format: 2, controlMode: 0, nUn: -1 });
+    simulator.setAdvanced(4, { newStation: 40, commMode: 0, baudRate: 0, format: 2 });
     vi.advanceTimersByTime(1000);
 
     expect(state.lamps.value[4]?.ID).toBe(40);
@@ -107,7 +108,7 @@ describe('模擬器 → 解析 → 燈管狀態', () => {
     simulator.start(false);
     vi.advanceTimersByTime(1000);
 
-    simulator.setAdvanced(1, { newStation: 1, commMode: 0, baudRate: 1, format: 2, controlMode: 0, nUn: -1 });
+    simulator.setAdvanced(1, { newStation: 1, commMode: 0, baudRate: 1, format: 2 });
     vi.advanceTimersByTime(1000);
 
     expect(state.lamps.value[1]?.BPS).toBe(19200);
@@ -124,51 +125,37 @@ describe('SET_OK / SET_ERROR 回覆行', () => {
     simulator.start(false);
     vi.advanceTimersByTime(1000);
 
-    tracker.start(1, 'run', [0], '運轉', Date.now(), false);
-    simulator.setRun(1, true);
+    tracker.start(1, 'main', [0, 80, 0, -1], '運轉', Date.now(), false);
+    simulator.setMain(1, { on: true, sv: 80, controlMode: 0, nUn: -1 });
     vi.advanceTimersByTime(0); // 讓 emitResult 的 setTimeout(0) 觸發
 
-    expect(tracker.commands.value[1]?.run?.status).toBe('confirmed');
+    expect(tracker.commands.value[1]?.main?.status).toBe('confirmed');
     simulator.stop();
   });
 
-  it('SET_SET 送出後回 SET_OK', () => {
+  it('SET_PARAMETER 送出後回 SET_OK', () => {
     const { tracker, simulator } = wire();
     simulator.start(false);
     vi.advanceTimersByTime(1000);
 
-    tracker.start(2, 'setSet', [50, 50, 0, 0, 5, 120, 30, 1, 1, 0, 0, 95], 'SET_SET', Date.now(), false);
-    simulator.setSet(2, DEFAULT_SET);
+    tracker.start(2, 'setParameter', [1, 0, 0, 0, 0, 0, 5, 120, 30, 1, 50, 50], 'SET_PARAMETER', Date.now(), false);
+    simulator.setParameter(2, DEFAULT_PARAMETER);
     vi.advanceTimersByTime(0);
 
-    expect(tracker.commands.value[2]?.setSet?.status).toBe('confirmed');
+    expect(tracker.commands.value[2]?.setParameter?.status).toBe('confirmed');
     simulator.stop();
   });
 
-  it('自動模式下送 NUN 不是 -1，模擬器回 SET_ERROR，指令立刻變 rejected 並帶錯誤說明', () => {
+  it('SET_ADVANCED 送出後回 SET_OK——v4 草案不再驗證 NUN，那個欄位已經移去 SET_MAIN，見 docs/DEVICE-CHECKLIST.md H1', () => {
     const { tracker, simulator } = wire();
     simulator.start(false);
     vi.advanceTimersByTime(1000);
 
-    tracker.start(3, 'setAdvanced', [0, 0], 'SET_ADVANCED', Date.now(), false);
-    simulator.setAdvanced(3, { newStation: 3, commMode: 0, baudRate: 0, format: 2, controlMode: 0, nUn: 0 });
+    tracker.start(3, 'setAdvanced', [3, 0, 9600, 2], 'SET_ADVANCED', Date.now(), false);
+    simulator.setAdvanced(3, { newStation: 3, commMode: 0, baudRate: 0, format: 2 });
     vi.advanceTimersByTime(0);
 
-    expect(tracker.commands.value[3]?.setAdvanced?.status).toBe('rejected');
-    expect(tracker.commands.value[3]?.setAdvanced?.errorText).toBe('韌體拒絕：NUN 不合法（CODE:2）');
-    simulator.stop();
-  });
-
-  it('SET_ADVANCED 帶合法 NUN（自動模式送 -1）時回 SET_OK', () => {
-    const { tracker, simulator } = wire();
-    simulator.start(false);
-    vi.advanceTimersByTime(1000);
-
-    tracker.start(4, 'setAdvanced', [0, -1], 'SET_ADVANCED', Date.now(), false);
-    simulator.setAdvanced(4, { newStation: 4, commMode: 0, baudRate: 0, format: 2, controlMode: 0, nUn: -1 });
-    vi.advanceTimersByTime(0);
-
-    expect(tracker.commands.value[4]?.setAdvanced?.status).toBe('confirmed');
+    expect(tracker.commands.value[3]?.setAdvanced?.status).toBe('confirmed');
     simulator.stop();
   });
 });

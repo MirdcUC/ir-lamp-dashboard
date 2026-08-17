@@ -1,7 +1,7 @@
 <template>
   <div class="settings-page">
     <div class="page-head">
-      <h1 class="title">設定</h1>
+      <h1 class="title">參數設定</h1>
     </div>
 
     <el-card shadow="never" class="mb-4 tech-panel">
@@ -14,16 +14,6 @@
             <el-option v-for="opt in SENSOR_TYPES" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="設定溫度">
-          <el-input-number
-            v-model="form.sv"
-            :min="SV_MIN"
-            :max="SV_MAX"
-            :step="svStep"
-            :precision="svPrecision"
-            class="w-full max-w-260px"
-          />
-        </el-form-item>
         <el-form-item label="溫度單位">
           <el-select v-model="form.unit" class="w-full max-w-260px">
             <el-option v-for="opt in TEMP_UNITS" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -34,6 +24,9 @@
             <el-option v-for="opt in DECIMAL_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
+        <el-form-item label="輸入修正">
+          <el-input-number v-model="form.sht" :min="-999" :max="9999" class="w-full max-w-260px" />
+        </el-form-item>
       </el-form>
     </el-card>
 
@@ -42,11 +35,11 @@
       <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
       <template #header><span class="font-bold section-head"><span class="tech-tag">02</span> 警報設定</span></template>
       <el-form label-width="110px">
-        <el-form-item label="第一組警報值 (AL1)">
-          <el-input-number v-model="form.al1" :min="-99" :max="999" class="w-full max-w-260px" />
+        <el-form-item label="AL1警報設定">
+          <el-input-number v-model="form.al1" :min="-999" :max="9999" class="w-full max-w-260px" />
         </el-form-item>
-        <el-form-item label="第二組警報值 (AL2)">
-          <el-input-number v-model="form.al2" :min="-99" :max="999" class="w-full max-w-260px" />
+        <el-form-item label="AL2警報設定">
+          <el-input-number v-model="form.al2" :min="-999" :max="9999" class="w-full max-w-260px" />
         </el-form-item>
       </el-form>
     </el-card>
@@ -56,12 +49,12 @@
       <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
       <template #header><span class="font-bold section-head"><span class="tech-tag">03</span> PID 設定</span></template>
       <el-form label-width="110px">
-        <el-form-item label="自動調諧">
+        <el-form-item label="自動演算">
           <el-select v-model="form.autoTune" class="w-full max-w-260px">
             <el-option v-for="opt in AUTO_TUNE_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="偏移量參數">
+        <el-form-item label="自動演算偏差值">
           <el-input-number v-model="form.offset" :min="0" :max="999" class="w-full max-w-260px" />
         </el-form-item>
         <el-form-item label="P">
@@ -73,7 +66,7 @@
         <el-form-item label="D">
           <el-input-number v-model="form.d" :min="0" :max="3999" class="w-full max-w-260px" />
         </el-form-item>
-        <el-form-item label="GAin">
+        <el-form-item label="輸出控制增益">
           <el-input-number v-model="form.gain" :min="0" :max="9.9" :step="0.1" :precision="1" class="w-full max-w-260px" />
         </el-form-item>
       </el-form>
@@ -89,8 +82,7 @@ import { useSerialStore } from '@/features/serial/store';
 import { activeLampId } from '@/features/serial/activeLamp';
 import { commandHintView } from '@/shared/settingsShared';
 import SaveBar from '@/shared/components/SaveBar.vue';
-import type { SetSetParams } from '@/features/serial/commands';
-import { SV_MIN, SV_MAX } from '@/features/serial/constants';
+import type { SetParameterParams } from '@/features/serial/commands';
 
 const store = useSerialStore();
 
@@ -102,13 +94,13 @@ const AUTO_TUNE_OPTIONS = ['Control', 'Auto-Tuning'].map((label, value) => ({ la
 
 const activeTab = activeLampId;
 
-const form = reactive<SetSetParams>({
+const form = reactive<SetParameterParams>({
   al1: 0,
   al2: 0,
   sensorType: 0,
-  sv: 0,
   unit: 0,
   decimal: 0,
+  sht: 0,
   autoTune: 0,
   offset: 0,
   p: 0,
@@ -127,9 +119,9 @@ const prefillFromDevice = (id: number) => {
     al1: status?.AL1 ?? 0,
     al2: status?.AL2 ?? 0,
     sensorType: status?.INT ?? 0,
-    sv: status?.SV ?? 0,
     unit: status?.UNT ?? 0,
     decimal: status?.DP ?? 0,
+    sht: status?.SHT ?? 0,
     autoTune: status?.AT ?? 0,
     offset: status?.TU ?? 0,
     p: status?.P ?? 0,
@@ -141,14 +133,10 @@ const prefillFromDevice = (id: number) => {
 
 watch(activeTab, prefillFromDevice, { immediate: true });
 
-// 設定溫度輸入框的小數位跟著「小數點」欄位（DP）走，跟主畫面顯示同一套規則，見 constants.ts formatTempValue
-const svPrecision = computed(() => (form.decimal === 1 ? 1 : 0));
-const svStep = computed(() => (form.decimal === 1 ? 0.5 : 1));
-
-const commandView = computed(() => commandHintView(store.commands[activeTab.value]?.setSet));
+const commandView = computed(() => commandHintView(store.commands[activeTab.value]?.setParameter));
 
 const save = () => {
-  store.writeSet(activeTab.value, { ...form });
+  store.writeParameter(activeTab.value, { ...form });
 };
 </script>
 

@@ -2,7 +2,13 @@ import { defineStore } from 'pinia';
 import { ref, type Ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { BAUD_RATE, LAMP_IDS } from './constants';
-import { commandText, lockedAdvancedFields, type SetSetParams, type SetAdvancedParams } from './commands';
+import {
+  commandText,
+  lockedAdvancedFields,
+  currentMainFields,
+  type SetMainParams,
+  type SetParameterParams,
+} from './commands';
 import { createCommandTracker } from './commandTracker';
 import { createDiagnostics } from './diagnostics';
 import { createLampState } from './lampState';
@@ -149,69 +155,77 @@ export const useSerialStore = defineStore('serial', () => {
   const isOffline = (id: number) => state.connections.value[id] === 'offline';
 
   /**
-   * Run/Stop 控制（SET_MAIN）。第一個參數是設定站號，用 `state` 的站號表把本地燈管 id
-   * 轉成該卡片目前的站號再送出（預設站號=id，只有進階設定改過站號後才會不同）。
-   * 期望值用協定的 ON_OFF 編碼（0=ON/1=OFF），跟 commandText.setMain 送出的方向一致。
+   * v4 草案（見 commands.ts 的 SetMainParams 說明，未經實機驗證）：`SET_MAIN` 同時帶
+   * `ON_OFF`/`SV`/`M_A`/`NUN`，Run/Stop 按鈕、設定溫度、進階設定的控制模式/NUN 三種畫面動作
+   * 最後都送這一道指令，只 override 真正要改的欄位，其餘照這支燈管目前回報的值原樣帶入
+   * （`currentMainFields`），避免不小心把使用者沒有要改的欄位一併改掉。
    */
-  const setRun = async (id: number, on: boolean) => {
+  const dispatchMain = async (id: number, overrides: Partial<SetMainParams>, requestedText: string) => {
     const offline = isOffline(id);
     const station = state.getStation(id);
-    const sent = await dispatch(commandText.setMain(station, on), () => simulator.setRun(id, on));
-    if (sent) tracker.start(id, 'run', [on ? 0 : 1], on ? '運轉' : '停止', Date.now(), offline);
+    const outgoing: SetMainParams = { ...currentMainFields(state.lamps.value[id]), ...overrides };
+
+    const sent = await dispatch(commandText.setMain(station, outgoing), () => simulator.setMain(id, outgoing));
+    if (sent) {
+      const expected = [outgoing.on ? 0 : 1, outgoing.sv, outgoing.controlMode, outgoing.nUn];
+      tracker.start(id, 'main', expected, requestedText, Date.now(), offline);
+    }
   };
 
+  /** Run/Stop 控制。期望值用協定的 ON_OFF 編碼（0=ON/1=OFF），跟 commandText.setMain 送出的方向一致 */
+  const setRun = (id: number, on: boolean) => dispatchMain(id, { on }, on ? '運轉' : '停止');
+
   /**
-   * 寫入感測器/警報/PID 設定（設定畫面的 SET_SET）；比對回報的對應欄位。
-   * `controlMode`（M_A）不是這個畫面管的欄位，直接照這支燈管目前回報的值原樣送回去，
-   * 不改變自動/手動模式——見 commands.ts 的 SetSetParams 說明，這個欄位是不是真的要出現在
-   * SET_SET 還在實測中。
+   * 寫入設定溫度/控制模式/手動輸出量（主畫面即時狀態面板，`LampDetailPanel.vue`）。
+   * pptx slide 1 的 (2)(3)(4) 三項明確畫在主畫面，不是設定畫面/進階設定畫面，見
+   * `docs/DEVICE-CHECKLIST.md` H 節。自動模式下 `nUn` 固定送 `-1`（沿用畫面.md 舊版規則，
+   * 代表「不適用」），手動模式下送表單輸入的實際值——呼叫端（`LampDetailPanel.vue`）負責換算。
    */
-  const writeSet = async (id: number, params: SetSetParams) => {
+  const writeMain = (id: number, overrides: Partial<Pick<SetMainParams, 'sv' | 'controlMode' | 'nUn'>>) =>
+    dispatchMain(id, overrides, 'SET_MAIN');
+
+  /**
+   * 寫入感測器/警報/PID/輸入修正設定（設定畫面的 SET_PARAMETER）；比對回報的對應欄位。
+   * `SV`/`M_A`/`NUN` 不在這裡了，見上方 `writeMain`。
+   */
+  const writeParameter = async (id: number, params: SetParameterParams) => {
     const offline = isOffline(id);
     const station = state.getStation(id);
-    const controlMode = state.lamps.value[id]?.M_A ?? 0;
+
     const sent = await dispatch(
-      commandText.setSet(station, params, controlMode),
-      () => simulator.setSet(id, params),
+      commandText.setParameter(station, params),
+      () => simulator.setParameter(id, params),
     );
     if (sent) {
       const expected = [
-        params.al1, params.al2, params.autoTune, params.offset,
-        params.p, params.i, params.d, params.gain,
-        params.sensorType, params.unit, params.decimal, controlMode, params.sv,
+        params.sensorType, params.unit, params.decimal, params.sht,
+        params.autoTune, params.offset, params.p, params.i,
+        params.d, params.gain, params.al1, params.al2,
       ];
-      tracker.start(id, 'setSet', expected, 'SET_SET', Date.now(), offline);
+      tracker.start(id, 'setParameter', expected, 'SET_PARAMETER', Date.now(), offline);
     }
   };
 
   /**
-   * 寫入控制模式設定（進階設定畫面的 SET_ADVANCED）；比對回報的對應欄位。指令用 7 參數的完整
-   * 格式（跟 README.txt 一致）——3 參數版本試過，被韌體回 `SET_ERROR(ADVANCED,FORMAT)`
-   * 整道拒絕，證實參數數量錯了，見 commands.ts 的 SetAdvancedParams 說明。
-   *
-   * `newStation`/`commMode`/`baudRate`/`format` 這四項不採用 `params` 裡的值（那是表單快照，
-   * 可能過期），改用 `lockedAdvancedFields` 直接從這支燈管目前回報的值算——保證每次送出去的
-   * 都是「維持不變」。`AdvancedSettingsPage.vue` 也用同一個函式來源顯示這幾個唯讀欄位。
-   *
-   * `NUN` 該送什麼值才會被接受目前不穩定——2026-08-14 同樣送 `-1`，曾經 `SET_OK`，也曾經被
-   * `SET_ERROR(PARAM:NUN,CODE:2)` 拒絕，原因還沒查出來，見 CHANGELOG.md。自動模式下沿用畫面.md
-   * 舊版規則固定送 `-1`；手動模式下送表單輸入的實際值，兩種都不保證一定會成功，UI 端已提醒
-   * 使用者要對照連線診斷確認結果。
+   * 寫入通訊設定（進階設定畫面）。`SET_ADVANCED` v4 草案只剩
+   * `newStation`/`commMode`/`baudRate`/`format`（見 commands.ts 的 SetAdvancedParams 說明），
+   * 這四項韌體工程師口頭表示執行期間無法變更，因此不採用表單快照，改用 `lockedAdvancedFields`
+   * 直接從這支燈管目前回報的值算——保證每次送出去的都是「維持不變」，也不做 read-back 比對
+   * （見 commandTracker.ts 的 reportedValues 說明）。`controlMode`（M_A）/`nUn` 移去
+   * `SET_MAIN` 了（見上方 `writeMain`），這裡不再收這兩個參數。
    */
-  const writeAdvanced = async (id: number, params: Pick<SetAdvancedParams, 'controlMode' | 'nUn'>) => {
+  const writeAdvanced = async (id: number) => {
     const offline = isOffline(id);
     const station = state.getStation(id);
-    const isManual = params.controlMode === 1;
     const locked = lockedAdvancedFields(state.lamps.value[id], id);
-    const outgoing: SetAdvancedParams = {
-      ...locked,
-      controlMode: params.controlMode,
-      nUn: isManual ? params.nUn : -1,
-    };
 
-    const sent = await dispatch(commandText.setAdvanced(station, outgoing), () => simulator.setAdvanced(id, outgoing));
+    const sent = await dispatch(commandText.setAdvanced(station, locked), () => simulator.setAdvanced(id, locked));
+    // expected 傳非空陣列只是為了讓這筆進入 pending（reportedValues('setAdvanced') 恆回傳 null，
+    // 這裡的值不會真的被拿去比對）——目的是讓 SET_OK/SET_ERROR 回覆行能透過 applyResult 生效；
+    // 傳空陣列的話會直接變成不可驗證的 sent，之後就算韌體真的回了 SET_OK/SET_ERROR 也不會處理，
+    // 見 commandTracker.ts 的 start()/applyResult()。
     if (sent) {
-      const expected = [params.controlMode, ...(isManual ? [params.nUn] : [])];
+      const expected = [locked.newStation, locked.commMode, locked.baudRate, locked.format];
       tracker.start(id, 'setAdvanced', expected, 'SET_ADVANCED', Date.now(), offline);
     }
   };
@@ -256,7 +270,8 @@ export const useSerialStore = defineStore('serial', () => {
     connect,
     disconnect,
     setRun,
-    writeSet,
+    writeMain,
+    writeParameter,
     writeAdvanced,
     startSimulation,
     stopSimulation,

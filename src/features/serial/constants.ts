@@ -73,12 +73,14 @@ export const RAW_LINE_BUFFER = 50;
 export const BAUD_RATE_VALUES = [9600, 19200, 38400] as const;
 
 /**
- * 協定 23 項欄位名，供解析器判斷哪些 key 要收；順序照 README.txt / xlsx 原始順序。
- * 見 types.ts 的 LampStatus 逐欄位說明。
+ * 協定欄位名，供解析器判斷哪些 key 要收；`SHT` 是 v4 新欄位（見 docs/DEVICE-CHECKLIST.md H2，
+ * 未經實機驗證）。key:value 逗號分隔格式解析不看順序，這裡加 `SHT` 不影響現行 v3 資料——
+ * v3 回報行本來就沒有這個 key，解析時單純不會出現在 fields 裡，不會壞現有功能。
+ * 其餘順序照 README.txt / xlsx 原始順序。見 types.ts 的 LampStatus 逐欄位說明。
  */
 export const LAMP_FIELD_KEYS = [
   'NUN', 'AL1', 'AL2', 'AT', 'TU', 'P', 'I', 'D', 'GAIN',
-  'INT', 'UNT', 'DP', 'ID', 'RS', 'BPS', 'BIT',
+  'INT', 'UNT', 'DP', 'SHT', 'ID', 'RS', 'BPS', 'BIT',
   'ON_OFF', 'M_A', 'SV', 'PV', 'UN', 'STATUS', 'ALARM',
 ] as const;
 
@@ -95,6 +97,7 @@ export const initLampStatus: LampStatus = {
   INT: null,
   UNT: null,
   DP: null,
+  SHT: null,
   ID: null,
   RS: null,
   BPS: null,

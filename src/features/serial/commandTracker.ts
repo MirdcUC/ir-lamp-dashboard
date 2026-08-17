@@ -3,7 +3,13 @@ import type { LampStatus } from './types';
 import { COMMAND_CLEAR_MS, COMMAND_TOLERANCE, COMMAND_TIMEOUT_MS } from './constants';
 import { describeSetError, type SetResult, type SetResultCommand } from './protocol/setResult';
 
-export type CommandType = 'run' | 'setSet' | 'setAdvanced';
+/**
+ * v4 草案把 `SV`/`M_A`/`NUN` 收進 `SET_MAIN`（見 commands.ts 的 SetMainParams 說明），所以
+ * `main` 涵蓋的不只是 Run/Stop，也涵蓋「設定溫度」（SettingsPage.vue）跟「控制模式/NUN」
+ * （AdvancedSettingsPage.vue）——這三個畫面動作最後都送同一種指令，因此共用同一個 tracker 欄位；
+ * `setSet` 改名 `setParameter`，對應改名後的 `SET_PARAMETER`。
+ */
+export type CommandType = 'main' | 'setParameter' | 'setAdvanced';
 
 /**
  * pending    已送出，等待回報值變化
@@ -49,25 +55,26 @@ type CommandMap = Record<number, Partial<Record<CommandType, CommandState>>>;
 function reportedValues(type: CommandType, lamp: LampStatus | undefined): (number | null)[] | null {
   if (!lamp) return null;
   switch (type) {
-    case 'run':
-      return [lamp.ON_OFF]; // ON_OFF：0=ON 1=OFF，跟 store.setRun 送出的 expected 值同一套編碼
-    // 欄位順序對應 SET_SET/SET_ADVANCED 指令參數；設定站號（newID）不比對——
-    // 改站號可能讓這支燈管之後改用別的 ID 回報，見待確認事項第 1 條
-    case 'setSet':
-      // M_A 這個位置是否真的屬於 SET_SET 還在實測中，見 commands.ts 的 SetSetParams 說明
-      return [lamp.AL1, lamp.AL2, lamp.AT, lamp.TU, lamp.P, lamp.I, lamp.D, lamp.GAIN, lamp.INT, lamp.UNT, lamp.DP, lamp.M_A, lamp.SV];
+    // 順序對應 commandText.setMain 的參數順序（ON_OFF,SV,M_A,NUN），見 commands.ts 的 SetMainParams
+    case 'main':
+      return [lamp.ON_OFF, lamp.SV, lamp.M_A, lamp.NUN];
+    // 欄位順序對應 SET_PARAMETER 指令參數；設定站號（currentID）不比對
+    case 'setParameter':
+      return [lamp.INT, lamp.UNT, lamp.DP, lamp.SHT, lamp.AT, lamp.TU, lamp.P, lamp.I, lamp.D, lamp.GAIN, lamp.AL1, lamp.AL2];
     case 'setAdvanced':
       // 不做 read-back 比對，只信任 SET_OK/SET_ERROR（見 applyResult）——2026-08-14 現場實測
-      // 發現：SET_ADVANCED 現在會把 newStation/RS/BPS/BIT 原樣送回去、controlMode 常常也沒變，
-      // 這種「沒有要求真的變更」的指令，下一行回報必然「符合」，跟指令有沒有被韌體接受無關，
-      // 會把「被 SET_ERROR 拒絕」誤判成「已回報成功」。見 CHANGELOG.md。
+      // 發現：SET_ADVANCED 現在會把 newStation/RS/BPS/BIT 原樣送回去，這種「沒有要求真的變更」
+      // 的指令，下一行回報必然「符合」，跟指令有沒有被韌體接受無關，會把「被 SET_ERROR 拒絕」
+      // 誤判成「已回報成功」。見 CHANGELOG.md。v4 草案把 M_A/NUN 移出這個指令後，SET_ADVANCED
+      // 剩下的四個欄位全部屬於這種情況，一樣不比對。
       return null;
   }
 }
 
 const RESULT_COMMAND_TO_TYPE: Record<SetResultCommand, CommandType> = {
-  MAIN: 'run',
-  SET: 'setSet',
+  MAIN: 'main',
+  SET: 'setParameter',
+  PARAMETER: 'setParameter', // 見 protocol/setResult.ts 的說明：回覆用哪個標籤還沒確認，兩種都收
   ADVANCED: 'setAdvanced',
 };
 
