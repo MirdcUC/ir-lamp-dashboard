@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-Hant" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>紅外線燈管控制模組儀表板</title>
+    <script>
+      // 在畫面繪製前依上次選擇套用主題，避免暗轉亮或亮轉暗的閃爍
+      (function () {
+        var saved = localStorage.getItem('ir-dashboard-theme');
+        if (saved === 'light') document.documentElement.classList.remove('dark');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

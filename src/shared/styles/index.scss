@@ -1,0 +1,210 @@
+// 響應式字級基準 — 現場螢幕從平板(768px)到大型看板(2560px)都會用到，
+// 根字級隨螢幕寬度內插縮放，所有元件的 rem 字級跟著等比例縮放
+html {
+  font-size: clamp(14px, 12.29px + 0.223vw, 18px);
+}
+
+// 工業 HMI 主題 tokens — 視覺語言取自現場的 FOTEK NT-48L-RS 溫控器面板
+// (黑面板、紅 PV 數碼管、綠 SV 數碼管、LED 指示燈)
+// LED 指示燈點亮色在明暗主題間不變（實體發光元件）；
+// PV/SV 顯示窗與數碼管文字則跟著鈑金明暗切換 —
+// 暗色主題是深色玻璃窗+發光數碼管，亮色主題改成淺灰 LCD 窗+深色數字，避免黑色鐵塊感
+:root {
+  --hmi-bg: #101316;          // 鈑金底色
+  --hmi-panel: #1a1f24;       // 面板面
+  --hmi-panel-edge: #2e353d;
+  --hmi-window: #0a0c0e;      // 顯示窗內凹黑
+  --hmi-led-red: #ff5a3c;     // PV 讀數(NT-48L-RS 為紅色數碼管)
+  --hmi-led-yellow: #ffd94a;  // SV 讀數(NT-48L-RS 為黃色數碼管)
+  --hmi-led-green: #46e08a;   // RUN/COM 正常指示
+  --hmi-amber: #ffb020;       // 警示 / AT / stale
+  --hmi-alarm: #ff4545;
+  --hmi-led-off: #333a42;     // 未點亮的 LED
+  --hmi-text: #e8eaed;
+  --hmi-text-dim: #8a939e;
+  --hmi-digits: Consolas, 'Cascadia Mono', Menlo, monospace;
+  --hmi-scrollbar: #3a424b;
+  --hmi-scrollbar-hover: #4a525b;
+  --hmi-readout-pv: var(--hmi-led-red);
+  --hmi-readout-sv: #c4e828;  // 設定溫度顯示用黃綠色，跟 PV 紅、輸出黃區隔開
+  --hmi-readout-pv-glow: 0 0 14px rgba(255, 90, 60, 0.45);
+  --hmi-readout-sv-glow: 0 0 10px rgba(196, 232, 40, 0.35);
+  --hmi-readout-dim: #3a4149;
+  --hmi-panel-shadow: none;               // 暗色本身面板已跟背景有明暗差，不需要額外陰影
+  --hmi-led-dot-border: rgba(255, 255, 255, 0.1);
+  --hmi-accent: #35d0ff;       // 科技風強調色（護角、標題），跟既有紅/黃/綠讀數區隔開
+  --hmi-accent-dim: rgba(53, 208, 255, 0.35);
+  --hmi-grid-line: rgba(255, 255, 255, 0.035); // 面板底紋藍圖網格線
+  // 文字專用的琥珀/綠色——LED 原色直接當文字色在亮色面板上會糊掉，這兩個 token 讓文字維持可讀對比
+  --hmi-amber-text: var(--hmi-amber);
+  --hmi-live-text: var(--hmi-led-green);
+  --hmi-live-glow: 0 0 10px rgba(70, 224, 138, 0.35);
+}
+
+// 亮色主題 — 鈑金外殼改為淺色噴漆
+html:not(.dark) {
+  --hmi-bg: #dde1e6;                      // 背景加深，讓白色面板浮出層次
+  --hmi-panel: #ffffff;
+  --hmi-panel-edge: #d5d9df;
+  --hmi-window: #e4e7eb;      // LCD 式淺灰顯示窗，不再是黑色鐵塊
+  --hmi-led-off: #ccd2d9;
+  --hmi-text: #1f2429;
+  --hmi-text-dim: #667080;
+  --hmi-scrollbar: #c3c9d1;
+  --hmi-scrollbar-hover: #a9b0ba;
+  // 淺灰底改用深色數字，發光陰影在亮底下沒有意義，直接拿掉
+  --hmi-readout-pv: #b8341f;
+  --hmi-readout-sv: #5c7a0a;
+  --hmi-readout-pv-glow: none;
+  --hmi-readout-sv-glow: none;
+  --hmi-readout-dim: #6d7686;              // 原本 #b0b6bd 在淺灰顯示窗上對比不到 2:1，加深到接近 4:1 才看得清楚
+  --hmi-panel-shadow: 0 1px 2px rgba(20, 24, 28, 0.05), 0 4px 10px rgba(20, 24, 28, 0.06);
+  --hmi-led-dot-border: rgba(0, 0, 0, 0.18); // 熄滅燈在白底上也要看得出邊界
+  --hmi-accent: #0891b2;
+  --hmi-accent-dim: rgba(8, 145, 178, 0.3);
+  --hmi-grid-line: rgba(0, 0, 0, 0.035);
+  // 琥珀/綠色原色在白底上對比不到 2:1，文字改用深色調版本；小尺寸 LED 圓點語意不變，維持原色
+  --hmi-amber-text: #8a5d00;
+  --hmi-live-text: #166b41;
+  --hmi-live-glow: none;
+}
+
+// Element Plus 元件貼齊面板色調
+html.dark {
+  --el-bg-color: var(--hmi-panel);
+  --el-bg-color-overlay: var(--hmi-panel);
+  --el-border-color: var(--hmi-panel-edge);
+  --el-border-color-light: var(--hmi-panel-edge);
+  --el-border-color-lighter: var(--hmi-panel-edge);
+  --el-fill-color-blank: var(--hmi-window);
+
+  .el-card {
+    --el-card-bg-color: var(--hmi-panel);
+    border-color: var(--hmi-panel-edge);
+  }
+}
+
+html:not(.dark) {
+  .el-card {
+    --el-card-bg-color: var(--hmi-panel);
+    border-color: var(--hmi-panel-edge);
+  }
+}
+
+// ---------------- 科技工廠風格共用元件 ----------------
+// 面板類元件共用：藍圖網格底紋 + 四角護角，統一整站視覺語言。
+// 用法：容器加 .tech-panel，內部四角各放一個 <i class="frame-corner corner-tl/tr/bl/br">
+.tech-panel {
+  position: relative;
+  background-image:
+    linear-gradient(var(--hmi-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hmi-grid-line) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: -1px -1px;
+}
+
+.frame-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--hmi-accent);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.corner-tl {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner-tr {
+  top: -1px;
+  right: -1px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-right: none;
+  border-top: none;
+}
+
+.corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+// LED 指示燈（圓點 + 文字），LampCard 的 RUN/AT/AL/COM 與 LampDetailPanel 的輸出/警報監控共用同一套語彙
+.led {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--hmi-digits);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  color: var(--hmi-text-dim);
+}
+
+.led-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hmi-led-off);
+  border: 1px solid var(--hmi-led-dot-border);
+}
+
+.led-green.is-lit .led-dot {
+  background: var(--hmi-led-green);
+  box-shadow: 0 0 6px var(--hmi-led-green);
+}
+
+.led-amber.is-lit .led-dot {
+  background: var(--hmi-amber);
+  box-shadow: 0 0 6px var(--hmi-amber);
+}
+
+.led-red.is-lit .led-dot {
+  background: var(--hmi-alarm);
+  box-shadow: 0 0 6px var(--hmi-alarm);
+}
+
+.led.is-lit {
+  color: var(--hmi-text);
+}
+
+.led.is-blink .led-dot {
+  animation: led-blink 1s steps(2, jump-none) infinite;
+}
+
+@keyframes led-blink {
+  50% {
+    background: var(--hmi-led-off);
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led.is-blink .led-dot {
+    animation: none;
+  }
+}
+
+// 段落編號牌，呼應 TopBar 的 MIRDC 銘牌
+.tech-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--hmi-digits);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--hmi-accent);
+  border: 1px solid var(--hmi-accent);
+  padding: 1px 7px;
+  border-radius: 2px;
+}

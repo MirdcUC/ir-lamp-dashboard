@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.local
+.env
+auto-imports.d.ts
+components.d.ts
+*.xlsx
+*.txt
+*.docx
+*.pptx
