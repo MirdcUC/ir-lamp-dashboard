@@ -26,25 +26,22 @@
         <i class="frame-corner corner-tl" /><i class="frame-corner corner-tr" />
         <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
         <template #header><span class="font-bold section-head"><span class="tech-tag">01</span> 通訊設定</span></template>
-        <p class="hint-note is-strong">
-          ⚠ 站號／通訊模式／通訊速度／通訊格式這四項<strong>目前鎖定、無法從這個畫面修改</strong>
-        </p>
         <el-form label-width="140px">
           <el-form-item label="站號">
-            <el-input-number :model-value="lockedFields.newStation" disabled class="w-full max-w-260px" />
+            <el-input-number v-model="form.newStation" :min="1" :max="255" class="w-full max-w-260px" />
           </el-form-item>
           <el-form-item label="通訊模式">
-            <el-select :model-value="lockedFields.commMode" disabled class="w-full max-w-260px">
+            <el-select v-model="form.commMode" class="w-full max-w-260px">
               <el-option v-for="opt in COMM_MODES" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="通訊速度">
-            <el-select :model-value="lockedFields.baudRate" disabled class="w-full max-w-260px">
+            <el-select v-model="form.baudRate" class="w-full max-w-260px">
               <el-option v-for="opt in BAUD_RATES" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="通訊格式">
-            <el-select :model-value="lockedFields.format" disabled class="w-full max-w-260px">
+            <el-select v-model="form.format" class="w-full max-w-260px">
               <el-option v-for="opt in COMM_FORMATS" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
@@ -57,13 +54,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { useSerialStore } from '@/features/serial/store';
 import { activeLampId } from '@/features/serial/activeLamp';
 import { commandHintView } from '@/shared/settingsShared';
 import SaveBar from '@/shared/components/SaveBar.vue';
 import { isAdvancedUnlocked, unlockAdvanced } from './advancedAccess';
-import { lockedAdvancedFields } from '@/features/serial/commands';
+import { lockedAdvancedFields, type SetAdvancedParams } from '@/features/serial/commands';
 import { BAUD_RATE_VALUES } from '@/features/serial/constants';
 
 const store = useSerialStore();
@@ -87,14 +84,24 @@ const COMM_FORMATS = ['7O1', '7E1', '8N1', '8O1', '8E1', '8N2'].map((label, valu
 
 const activeTab = activeLampId;
 
-// 站號／通訊模式／通訊速度／通訊格式唯讀顯示用，跟 store.ts 送出時的來源共用同一個函式，
-// 保證畫面看到的「目前值」跟實際會送出去的「維持不變」值一致；四項都鎖定，這個畫面沒有其他表單欄位
-const lockedFields = computed(() => lockedAdvancedFields(store.lamps[activeTab.value], activeTab.value));
+const form = reactive<SetAdvancedParams>({
+  newStation: 1,
+  commMode: 0,
+  baudRate: 0,
+  format: 0,
+});
+
+// 切換分頁時用該燈管目前回報的值預填表單，之後不會被之後才到的新資料覆蓋——避免使用者編輯到一半被蓋掉
+const prefillFromDevice = (id: number) => {
+  Object.assign(form, lockedAdvancedFields(store.lamps[id], id));
+};
+
+watch(activeTab, prefillFromDevice, { immediate: true });
 
 const commandView = computed(() => commandHintView(store.commands[activeTab.value]?.setAdvanced));
 
 const save = () => {
-  store.writeAdvanced(activeTab.value);
+  store.writeAdvanced(activeTab.value, { ...form });
 };
 </script>
 
@@ -144,23 +151,5 @@ const save = () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.hint-note {
-  font-size: 0.75rem;
-  color: var(--hmi-text-dim);
-  margin: 8px 0 0;
-}
-
-/* 「這幾項鎖住不能改」的警告要比一般提示文字更醒目，用警示色跟底色框起來 */
-.hint-note.is-strong {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  border: 1px solid var(--hmi-amber-text);
-  border-radius: 3px;
-  background: rgba(255, 190, 60, 0.08);
-  color: var(--hmi-amber-text);
-  font-weight: 600;
-  line-height: 1.6;
 }
 </style>
