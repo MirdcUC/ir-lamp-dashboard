@@ -24,16 +24,16 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import TopBar from '@/shared/components/TopBar.vue'
 import LampTabs from '@/shared/components/LampTabs.vue'
 import DebugPanel from '@/shared/components/DebugPanel.vue'
+import { showDebug } from '@/shared/debugVisibility'
 
 const route = useRoute()
 
-// 連線診斷面板；正式畫面不顯示，除錯時才用 ?debug=1 開啟，三個畫面共用同一份
-const showDebug = computed(() => 'debug' in route.query)
+// 連線診斷面板初始值：?debug=1 開啟，之後可在 TopBar 用開關手動切換（見 debugVisibility.ts）
+showDebug.value = 'debug' in route.query
 
 // 三個畫面共用左側導覽列，見 產線/紅外線控制模組_畫面.md「畫面架構」；畫面切換交給 vue-router（見 app/router.ts）
 // 導覽連結帶上目前的 query（?mock=1、?debug=1），切頁不中斷開發用旗標

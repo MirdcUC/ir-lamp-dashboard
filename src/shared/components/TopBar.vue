@@ -16,6 +16,10 @@
       </span>
       <span class="clock">{{ clockText }}</span>
       <el-button circle title="切換明暗主題" @click="toggleTheme">{{ isDark ? '☀' : '☾' }}</el-button>
+      <div class="flex items-center gap-2 debug-toggle">
+        <span class="switch-label">連線診斷</span>
+        <el-switch v-model="showDebug" />
+      </div>
       <div class="flex items-center gap-2">
         <el-button
           v-if="!store.isConnected"
@@ -27,10 +31,7 @@
         </el-button>
         <el-button v-else type="danger" @click="store.disconnect">中斷連線</el-button>
 
-        <el-button v-if="!store.isSimulating" :disabled="store.isConnected" @click="store.startSimulation">
-          啟動模擬
-        </el-button>
-        <el-button v-else type="warning" @click="store.stopSimulation">停止模擬</el-button>
+        <el-button v-if="store.isSimulating" type="warning" @click="store.stopSimulation">停止模擬</el-button>
       </div>
     </div>
   </div>
@@ -41,6 +42,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useSerialStore } from '@/features/serial/store';
 import { isSerialSupported } from '@/features/serial/connection';
 import { isDark, toggleTheme } from '@/app/theme';
+import { showDebug } from '@/shared/debugVisibility';
 
 const store = useSerialStore();
 const serialSupported = isSerialSupported();
@@ -147,6 +149,12 @@ onUnmounted(() => window.clearInterval(clockTimer));
   font-size: 0.75rem;
   color: var(--hmi-amber-text);
   max-width: 320px;
+}
+
+.switch-label {
+  font-size: 0.75rem;
+  color: var(--hmi-text-dim);
+  white-space: nowrap;
 }
 
 .clock {
