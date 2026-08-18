@@ -128,16 +128,21 @@ BPS  RAW=0   -> BPS:9600
 
 ### SET_MAIN — 開關溫控器 + 設定溫度 + 控制模式/手動輸出量
 
+`NUN` 只有 `M_A=1`（手動）時才帶，`M_A=0`（自動）時不帶——2026-08-18 討論定案，待實機驗證是否真的
+避開 v3「自動模式送 NUN 被拒絕」的問題（`docs/DEVICE-CHECKLIST.md` G7/H1）。
+
 ```text
-SET_MAIN(currentID,ON_OFF,SV,M_A,NUN)
+SET_MAIN(currentID,ON_OFF,SV,M_A)        // M_A=0（自動）
+SET_MAIN(currentID,ON_OFF,SV,M_A,NUN)    // M_A=1（手動）
 ```
 
-例：`SET_MAIN(1,0,150,0,0)` — 站號 1 的控制器啟動，設定溫度 150，自動模式。
+例：`SET_MAIN(1,0,150,0)` — 站號 1 的控制器啟動，設定溫度 150，自動模式。
 
 位置定義：
 
 ```text
-0=currentID 1=ON_OFF 2=SV 3=M_A 4=NUN
+0=currentID 1=ON_OFF 2=SV 3=M_A         （M_A=0）
+0=currentID 1=ON_OFF 2=SV 3=M_A 4=NUN   （M_A=1）
 ```
 
 每次呼叫只有其中一兩項是使用者真的要改的（例如按 Run/Stop 只改 `ON_OFF`），其餘欄位由

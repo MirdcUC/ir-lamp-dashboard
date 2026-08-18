@@ -46,10 +46,9 @@ export interface SetAdvancedParams {
 }
 
 /**
- * `newStation`/`commMode`/`baudRate`/`format` 這四項韌體工程師口頭表示執行期間無法變更，
- * 因此一律照這支燈管目前回報的值原樣送回去（不要求變更），不採用表單快照——見 `store.ts` 的
- * `writeAdvanced`。`AdvancedSettingsPage.vue` 也用同一份換算邏輯顯示這幾個唯讀欄位，兩邊不會
- * 算出不一致的結果。
+ * 從這支燈管目前回報的值算出 `newStation`/`commMode`/`baudRate`/`format` 的預設值，供
+ * `AdvancedSettingsPage.vue` 切換分頁時預填表單——跟 `currentMainFields` 同一個套路，
+ * 差別在這裡預填後使用者可以編輯再送出，不是原樣回填。
  */
 export function lockedAdvancedFields(lamp: LampStatus | undefined, fallbackId: number) {
   return {
@@ -78,11 +77,15 @@ export function currentMainFields(lamp: LampStatus | undefined): SetMainParams {
 /**
  * 每個指令的位置參數名稱，跟 `commandText` 組字串的順序一一對應。
  * 只給 `describeCommand` 用來把送出的指令標註成看得懂的形式，不影響實際送出的內容。
+ * `SET_MAIN` 給陣列而不是單一組固定長度——AUTO 不帶 NUN 只有 4 個參數，MANUAL 才有 5 個。
  */
-const COMMAND_FIELD_NAMES: Record<string, readonly string[]> = {
-  SET_MAIN: ['currentID', 'ON_OFF', 'SV', 'M_A', 'NUN'],
-  SET_PARAMETER: ['currentID', 'INT', 'UNT', 'DP', 'SHT', 'AT', 'TU', 'P', 'I', 'D', 'GAIN', 'AL1', 'AL2'],
-  SET_ADVANCED: ['currentID', 'newID', 'RS', 'BPS', 'BIT'],
+const COMMAND_FIELD_NAMES: Record<string, readonly (readonly string[])[]> = {
+  SET_MAIN: [
+    ['currentID', 'ON_OFF', 'SV', 'M_A'],
+    ['currentID', 'ON_OFF', 'SV', 'M_A', 'NUN'],
+  ],
+  SET_PARAMETER: [['currentID', 'INT', 'UNT', 'DP', 'SHT', 'AT', 'TU', 'P', 'I', 'D', 'GAIN', 'AL1', 'AL2']],
+  SET_ADVANCED: [['currentID', 'newID', 'RS', 'BPS', 'BIT']],
 };
 
 /**
@@ -95,11 +98,12 @@ export function describeCommand(line: string): string | null {
   if (!match) return null;
 
   const [, cmd, argsText] = match;
-  const names = COMMAND_FIELD_NAMES[cmd!];
-  if (!names) return null;
+  const candidates = COMMAND_FIELD_NAMES[cmd!];
+  if (!candidates) return null;
 
   const values = (argsText ?? '').split(',');
-  if (values.length !== names.length) return null;
+  const names = candidates.find((c) => c.length === values.length);
+  if (!names) return null;
 
   return names.map((name, idx) => `${name}=${values[idx]}`).join(', ');
 }
@@ -107,8 +111,12 @@ export function describeCommand(line: string): string | null {
 /** PC → Arduino 的指令字串；格式見 docs/PROTOCOL.md v4 草案（指令名稱後直接接括號、逗號分隔的位置參數） */
 export const commandText = {
   // 第一個參數是設定站號（1~255），三個指令都用同一支溫控器目前的站號定址
+  // AUTO（M_A=0）不帶 NUN，MANUAL（M_A=1）才帶——避免自動模式下 NUN 被當成格式/數值錯誤拒絕
+  // （v3 的 SET_ADVANCED 有這問題，見 docs/DEVICE-CHECKLIST.md G7），2026-08-18 討論定案，待實機驗證
   setMain: (station: number, p: SetMainParams) =>
-    `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode},${p.nUn})`, // 控制器 ON:0 / OFF:1
+    p.controlMode === 0
+      ? `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode})` // 控制器 ON:0 / OFF:1
+      : `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode},${p.nUn})`,
 
   setParameter: (station: number, p: SetParameterParams) =>
     `SET_PARAMETER(${station},${p.sensorType},${p.unit},${p.decimal},${p.sht},${p.autoTune},${p.offset},${p.p},${p.i},${p.d},${p.gain},${p.al1},${p.al2})`,

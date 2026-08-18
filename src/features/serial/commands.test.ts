@@ -4,8 +4,11 @@ import { initLampStatus } from './constants';
 import type { LampStatus } from './types';
 
 describe('commandText.setMain', () => {
-  it('組出 5 參數：currentID,ON_OFF,SV,M_A,NUN（v4 草案，見 SetMainParams 的說明）', () => {
-    expect(commandText.setMain(1, { on: true, sv: 150, controlMode: 0, nUn: 0 })).toBe('SET_MAIN(1,0,150,0,0)');
+  it('AUTO（M_A=0）不帶 NUN，組出 4 參數：currentID,ON_OFF,SV,M_A', () => {
+    expect(commandText.setMain(1, { on: true, sv: 150, controlMode: 0, nUn: 0 })).toBe('SET_MAIN(1,0,150,0)');
+  });
+
+  it('MANUAL（M_A=1）才帶 NUN，組出 5 參數：currentID,ON_OFF,SV,M_A,NUN', () => {
     expect(commandText.setMain(1, { on: false, sv: 100, controlMode: 1, nUn: 50 })).toBe('SET_MAIN(1,1,100,1,50)');
   });
 });
@@ -41,8 +44,12 @@ describe('describeCommand', () => {
     );
   });
 
-  it('SET_MAIN 標註成 5 個具名欄位', () => {
-    expect(describeCommand('SET_MAIN(1,0,150,0,0)')).toBe('currentID=1, ON_OFF=0, SV=150, M_A=0, NUN=0');
+  it('SET_MAIN 4 參數（AUTO 不帶 NUN）標註成 4 個具名欄位', () => {
+    expect(describeCommand('SET_MAIN(1,0,150,0)')).toBe('currentID=1, ON_OFF=0, SV=150, M_A=0');
+  });
+
+  it('SET_MAIN 5 參數（MANUAL 帶 NUN）標註成 5 個具名欄位', () => {
+    expect(describeCommand('SET_MAIN(1,1,100,1,50)')).toBe('currentID=1, ON_OFF=1, SV=100, M_A=1, NUN=50');
   });
 
   it('SET_ADVANCED 標註成 5 個具名欄位', () => {

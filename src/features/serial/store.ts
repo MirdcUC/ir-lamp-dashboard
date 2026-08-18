@@ -4,10 +4,10 @@ import { ElMessage } from 'element-plus';
 import { BAUD_RATE, LAMP_IDS } from './constants';
 import {
   commandText,
-  lockedAdvancedFields,
   currentMainFields,
   type SetMainParams,
   type SetParameterParams,
+  type SetAdvancedParams,
 } from './commands';
 import { createCommandTracker } from './commandTracker';
 import { createDiagnostics } from './diagnostics';
@@ -178,8 +178,9 @@ export const useSerialStore = defineStore('serial', () => {
   /**
    * 寫入設定溫度/控制模式/手動輸出量（主畫面即時狀態面板，`LampDetailPanel.vue`）。
    * pptx slide 1 的 (2)(3)(4) 三項明確畫在主畫面，不是設定畫面/進階設定畫面，見
-   * `docs/DEVICE-CHECKLIST.md` H 節。自動模式下 `nUn` 固定送 `-1`（沿用畫面.md 舊版規則，
-   * 代表「不適用」），手動模式下送表單輸入的實際值——呼叫端（`LampDetailPanel.vue`）負責換算。
+   * `docs/DEVICE-CHECKLIST.md` H 節。自動模式下 `commandText.setMain` 直接不帶 `NUN`（2026-08-18
+   * 討論定案，待實機驗證是否避開 v3「自動模式送 NUN 被拒絕」的問題，見 G7/H1），手動模式下送
+   * 表單輸入的實際值——呼叫端（`LampDetailPanel.vue`）負責換算。
    */
   const writeMain = (id: number, overrides: Partial<Pick<SetMainParams, 'sv' | 'controlMode' | 'nUn'>>) =>
     dispatchMain(id, overrides, 'SET_MAIN');
@@ -208,24 +209,20 @@ export const useSerialStore = defineStore('serial', () => {
 
   /**
    * 寫入通訊設定（進階設定畫面）。`SET_ADVANCED` v4 草案只剩
-   * `newStation`/`commMode`/`baudRate`/`format`（見 commands.ts 的 SetAdvancedParams 說明），
-   * 這四項韌體工程師口頭表示執行期間無法變更，因此不採用表單快照，改用 `lockedAdvancedFields`
-   * 直接從這支燈管目前回報的值算——保證每次送出去的都是「維持不變」，也不做 read-back 比對
-   * （見 commandTracker.ts 的 reportedValues 說明）。`controlMode`（M_A）/`nUn` 移去
-   * `SET_MAIN` 了（見上方 `writeMain`），這裡不再收這兩個參數。
+   * `newStation`/`commMode`/`baudRate`/`format`（見 commands.ts 的 SetAdvancedParams 說明）。
+   * `controlMode`（M_A）/`nUn` 移去 `SET_MAIN` 了（見上方 `writeMain`），這裡不再收這兩個參數。
    */
-  const writeAdvanced = async (id: number) => {
+  const writeAdvanced = async (id: number, params: SetAdvancedParams) => {
     const offline = isOffline(id);
     const station = state.getStation(id);
-    const locked = lockedAdvancedFields(state.lamps.value[id], id);
 
-    const sent = await dispatch(commandText.setAdvanced(station, locked), () => simulator.setAdvanced(id, locked));
+    const sent = await dispatch(commandText.setAdvanced(station, params), () => simulator.setAdvanced(id, params));
     // expected 傳非空陣列只是為了讓這筆進入 pending（reportedValues('setAdvanced') 恆回傳 null，
     // 這裡的值不會真的被拿去比對）——目的是讓 SET_OK/SET_ERROR 回覆行能透過 applyResult 生效；
     // 傳空陣列的話會直接變成不可驗證的 sent，之後就算韌體真的回了 SET_OK/SET_ERROR 也不會處理，
     // 見 commandTracker.ts 的 start()/applyResult()。
     if (sent) {
-      const expected = [locked.newStation, locked.commMode, locked.baudRate, locked.format];
+      const expected = [params.newStation, params.commMode, params.baudRate, params.format];
       tracker.start(id, 'setAdvanced', expected, 'SET_ADVANCED', Date.now(), offline);
     }
   };
@@ -267,6 +264,7 @@ export const useSerialStore = defineStore('serial', () => {
     parseRate: diagnostics.parseRate,
     staleness: state.staleness,
     commands: tracker.commands,
+    getStation: state.getStation,
     connect,
     disconnect,
     setRun,
