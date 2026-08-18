@@ -24,17 +24,6 @@
       </div>
     </template>
 
-    <div class="metric-grid">
-      <div class="metric metric-temp">
-        <span class="metric-label">現在溫度</span>
-        <span class="metric-value">{{ fmt(status?.PV) }}<span class="metric-unit">{{ unitLabel }}</span></span>
-      </div>
-      <div class="metric metric-out">
-        <span class="metric-label">現在輸出量</span>
-        <span class="metric-value">{{ fmt(status?.UN) }}<span class="metric-unit">%</span></span>
-      </div>
-    </div>
-
     <div class="panel-divider"><span>控制設定</span></div>
     <el-form label-width="110px" class="control-form">
       <el-form-item label="設定溫度">
@@ -58,6 +47,18 @@
       </el-form-item>
     </el-form>
 
+    <div class="panel-divider"><span>目前狀態</span></div>
+    <div class="metric-grid">
+      <div class="metric metric-temp">
+        <span class="metric-label">現在溫度</span>
+        <span class="metric-value">{{ fmt(status?.PV) }}<span class="metric-unit">{{ unitLabel }}</span></span>
+      </div>
+      <div class="metric metric-out">
+        <span class="metric-label">實際輸出量</span>
+        <span class="metric-value">{{ fmt(status?.UN) }}<span class="metric-unit">%</span></span>
+      </div>
+    </div>
+
     <div class="panel-divider"><span>輸出與警報監控</span></div>
     <div class="io-row">
       <div class="io-group">
@@ -72,9 +73,9 @@
       </div>
     </div>
 
-    <div class="alarm-row">
+    <div class="alarm-status">
       <span class="metric-label">警報狀態</span>
-      <span class="metric-value">{{ alarmText }}</span>
+      <div class="alarm-window">{{ alarmText }}</div>
     </div>
   </el-card>
 
@@ -148,11 +149,13 @@ watch(
   },
 );
 
+// 自動模式下 NUN 送 0（原本沿用畫面.md 舊版規則送 -1，代表「不適用」；改送 0 是否更符合
+// 韌體實際驗證邏輯待實機測試確認，見 docs/DEVICE-CHECKLIST.md G7/H1）
 const saveControl = () => {
   store.writeMain(activeLampId.value, {
     sv: controlForm.sv,
     controlMode: controlForm.controlMode,
-    nUn: isManualControl.value ? controlForm.nUn : -1,
+    nUn: isManualControl.value ? controlForm.nUn : 0,
   });
 };
 
@@ -340,16 +343,26 @@ const alarmText = computed(() => {
   height: 14px;
 }
 
-.alarm-row {
+.alarm-status {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--hmi-panel-edge);
 }
 
-.alarm-row .metric-value {
+/* 「顯示方塊」樣式跟現在溫度／實際輸出量的 .metric 同一套語彙，標籤在上、數值窗在下 */
+.alarm-window {
+  background: var(--hmi-window);
+  border: 1px solid var(--hmi-panel-edge);
+  border-top: 2px solid var(--hmi-accent-dim);
+  border-radius: 3px;
+  padding: 10px 12px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.25);
+  font-family: var(--hmi-digits);
   font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--hmi-text);
 }
 </style>
