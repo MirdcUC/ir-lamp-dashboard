@@ -178,10 +178,11 @@ SET_ADVANCED(currentID,newID,RS,BPS,BIT)
 0=currentID 1=newID 2=RS 3=BPS 4=BIT
 ```
 
-`M_A`/`NUN` 不在這個指令裡了（見上方 SET_MAIN）。`newID`/`RS`/`BPS`/`BIT` 沿用 v3 的假設——
-韌體工程師口頭表示執行期間無法變更，前端一律照這支燈管目前回報的值原樣送回去（不要求變更），
-`AdvancedSettingsPage.vue` 把對應欄位鎖成唯讀（`commands.ts` 的 `lockedAdvancedFields`），也
-不做 read-back 比對（見 `commandTracker.ts` 的 `reportedValues`）。
+`M_A`/`NUN` 不在這個指令裡了（見上方 SET_MAIN）。`newID`/`RS`/`BPS`/`BIT` 原本沿用 v3 的假設鎖成
+唯讀（韌體工程師口頭表示執行期間無法變更），2026-08-18 已拔掉唯讀限制，`AdvancedSettingsPage.vue`
+改成可編輯表單，切換分頁時用該燈管目前回報的值預填（`commands.ts` 的 `lockedAdvancedFields`），
+使用者可以修改後再送出，不是原樣回填。這幾項仍然不做 read-back 比對（見 `commandTracker.ts` 的
+`reportedValues`），送出後是否真的生效只能看 `SET_OK`/`SET_ERROR`。
 
 > **v3 的歷史教訓，v4 還沒重新驗證過，但邏輯仍然適用**：
 > - `SET_SET`／`SET_ADVANCED` 都曾經因為「文件寫的參數數量」跟「韌體實際期待的參數數量」不一致
