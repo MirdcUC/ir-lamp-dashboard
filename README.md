@@ -1,4 +1,4 @@
-# 紅外線燈管控制模組儀表板
+# 紅外線燈管控制模組系統
 
 產線四支紅外線燈管（FOTEK NT-48L-RS 溫控器）的單頁監控儀表板。
 瀏覽器透過 Web Serial API 與 Arduino 溝通，Arduino 再以 RS-485 (Modbus RTU) 對四台溫控器輪詢與下指令。
