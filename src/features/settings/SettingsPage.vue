@@ -33,21 +33,7 @@
     <el-card shadow="never" class="mb-4 tech-panel">
       <i class="frame-corner corner-tl" /><i class="frame-corner corner-tr" />
       <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
-      <template #header><span class="font-bold section-head"><span class="tech-tag">02</span> 警報設定</span></template>
-      <el-form label-width="110px">
-        <el-form-item label="AL1警報設定">
-          <el-input-number v-model="form.al1" :min="-999" :max="9999" class="w-full max-w-260px" />
-        </el-form-item>
-        <el-form-item label="AL2警報設定">
-          <el-input-number v-model="form.al2" :min="-999" :max="9999" class="w-full max-w-260px" />
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card shadow="never" class="mb-4 tech-panel">
-      <i class="frame-corner corner-tl" /><i class="frame-corner corner-tr" />
-      <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
-      <template #header><span class="font-bold section-head"><span class="tech-tag">03</span> PID 設定</span></template>
+      <template #header><span class="font-bold section-head"><span class="tech-tag">02</span> PID 設定</span></template>
       <el-form label-width="110px">
         <el-form-item label="自動演算">
           <el-select v-model="form.autoTune" class="w-full max-w-260px">
@@ -68,6 +54,20 @@
         </el-form-item>
         <el-form-item label="輸出控制增益">
           <el-input-number v-model="form.gain" :min="0" :max="9.9" :step="0.1" :precision="1" class="w-full max-w-260px" />
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card shadow="never" class="mb-4 tech-panel">
+      <i class="frame-corner corner-tl" /><i class="frame-corner corner-tr" />
+      <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
+      <template #header><span class="font-bold section-head"><span class="tech-tag">03</span> 警報設定</span></template>
+      <el-form label-width="110px">
+        <el-form-item label="AL1警報設定">
+          <el-input-number v-model="form.al1" :min="-999" :max="9999" class="w-full max-w-260px" />
+        </el-form-item>
+        <el-form-item label="AL2警報設定">
+          <el-input-number v-model="form.al2" :min="-999" :max="9999" class="w-full max-w-260px" />
         </el-form-item>
       </el-form>
     </el-card>
