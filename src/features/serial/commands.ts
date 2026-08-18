@@ -2,61 +2,53 @@ import { BAUD_RATE_VALUES } from './constants';
 import type { LampStatus } from './types';
 
 /**
- * 「設定畫面」對應的 SET_SET 參數。
- *
- * README.txt 裡這個指令其實有兩種矛盾的參數列：開頭「架構總覽」段落是
- * `SET_SET(currentID,AL1,AL2,AT,TU,P,I,D,GAIN,INT,UNT,DP,M_A,SV)`（14 參數，含 M_A），
- * 後面「已確認」的詳細規格改成 `SET_SET(currentID,AL1,AL2,AT,TU,P,I,D,GAIN,INT,UNT,DP,SV)`
- * （13 參數，M_A 移到 SET_ADVANCED）。2026-08-14 實測：按文件「已確認」版本（13 參數）送出，
- * 韌體回 `SET_ERROR(SET,FORMAT)`——沒有 PARAM/CODE，是通用格式錯誤，判斷是參數數量對不上，
- * 代表實際跑的韌體還是吃舊的 14 參數格式，文件那句「M_A 已移除」還沒真的同步到韌體。
- * 因此 M_A 加回來了（見 commandText.setSet 的第三個參數），但這個判斷還沒完全定案，
- * 待這次改動實測確認後再拿掉這段說明。
+ * v4 草案（韌體工程師 2026-08-17 提供的 `紅外線控制模組_畫面.pptx`，見
+ * docs/DEVICE-CHECKLIST.md H 節，未經實機驗證）：`SV`/`M_A`/`NUN` 從原本的 `SET_SET`/
+ * `SET_ADVANCED` 都收斂進 `SET_MAIN`，變成 Run/Stop 指令一併帶溫度設定值跟控制模式。
+ * `SettingsPage.vue`「設定溫度」、`AdvancedSettingsPage.vue`「控制模式選擇」/`NUN` 這幾個
+ * 欄位的輸入框位置不變，但實際送出的指令改成呼叫這裡——見 `store.ts` 的 `dispatchMain`。
  */
-export interface SetSetParams {
-  al1: number;        // 第一組警報設定值 -99~999
-  al2: number;         // 第二組警報設定值 -99~999
-  autoTune: number;    // AT，0=Controlling 1=Auto-tuning
-  offset: number;       // TU，Auto-tuning 偏差 0~999
-  p: number;
-  i: number;
-  d: number;
-  gain: number;         // GAIN 0.0~9.9
-  sensorType: number;   // INT，下拉選單索引（Pt/K/J/R/S/T/B/E/N/L）
-  unit: number;         // UNT，下拉選單索引（℃/℉）
-  decimal: number;      // DP，下拉選單索引（無小數/一位小數）
-  sv: number;           // 設定溫度
+export interface SetMainParams {
+  on: boolean;          // ON_OFF，commandText.setMain 內部轉換成協定的 0=ON/1=OFF
+  sv: number;             // SV，設定溫度
+  controlMode: number;   // M_A，0=AUTO 1=MANUAL
+  nUn: number;             // NUN，手動輸出量 0~100
 }
 
 /**
- * 「進階設定畫面」對應的 SET_ADVANCED 參數，順序見 README.txt：
- * SET_ADVANCED(currentID,newID,RS,BPS,BIT,M_A,NUN)
- *
- * 2026-08-14 實測過兩種參數數量：
- * - 7 參數（含 newID/RS/BPS/BIT，照現況原樣送回去、只改 M_A/NUN）：被拒絕，但錯誤是
- *   `SET_ERROR(PARAM:NUN,CODE:2)`——帶 PARAM/CODE 細節，代表指令本身有被韌體正確解析，
- *   只是 NUN 這個「值」被判定不合法，不是格式錯。
- * - 3 參數（只送 currentID/M_A/NUN）：被拒絕，錯誤是 `SET_ERROR(ADVANCED,FORMAT)`——沒有
- *   PARAM/CODE 細節的通用格式錯誤，代表參數數量不對，3 個是錯的。
- *
- * 兩相對照，7 參數（跟 README.txt 文件一致）才是韌體實際期待的格式；3 參數是根據韌體工程師
- * 口頭描述做的錯誤猜測，已經改回來。真正還沒解決的是 `NUN` 在這個情境下該送什麼值才會被接受
- * （見下方 `nUn` 欄位的說明與 CHANGELOG.md），跟參數數量無關。
+ * 「感測器設定」對應的 SET_PARAMETER 參數（v4 草案，原 `SET_SET` 已改名，見 SetMainParams 上方
+ * 說明）。`M_A`/`SV` 移去 `SET_MAIN` 了，這裡不再出現；新增 `SHT`（輸入修正）欄位。
+ */
+export interface SetParameterParams {
+  sensorType: number;   // INT，下拉選單索引（Pt/K/J/R/S/T/B/E/N/L）
+  unit: number;         // UNT，下拉選單索引（℃/℉）
+  decimal: number;      // DP，下拉選單索引（無小數/一位小數）
+  sht: number;           // SHT，輸入修正（感測器校正偏移量）-999~9999
+  autoTune: number;      // AT，0=Controlling 1=Auto-tuning
+  offset: number;        // TU，Auto-tuning 偏差 0~999
+  p: number;
+  i: number;
+  d: number;
+  gain: number;          // GAIN 0.0~9.9
+  al1: number;           // 第一組警報設定值 -999~9999
+  al2: number;           // 第二組警報設定值 -999~9999
+}
+
+/**
+ * 「進階設定畫面」對應的 SET_ADVANCED 參數（v4 草案）：`newID,RS,BPS,BIT`，`M_A`/`NUN` 移去
+ * `SET_MAIN` 了，不再出現於這個指令。
  */
 export interface SetAdvancedParams {
   newStation: number; // newID，設定站號 1~255
   commMode: number;   // RS，下拉選單索引（RTU/ASCII）
   baudRate: number;   // BPS，下拉選單索引（對應 BAUD_RATE_VALUES：9600/19200/38400）
   format: number;     // BIT，下拉選單索引（7O1/7E1/8N1/8O1/8E1/8N2）
-  controlMode: number; // M_A，下拉選單索引（自動/手動）
-  nUn: number;         // NUN，手動輸出 0~100；實際會被接受的值目前還沒確認，見上方說明與 CHANGELOG.md
 }
 
 /**
- * `newStation`/`commMode`/`baudRate`/`format` 這四項韌體工程師口頭表示執行期間無法變更，
- * 因此一律照這支燈管目前回報的值原樣送回去（不要求變更），不採用表單快照——見 `store.ts` 的
- * `writeAdvanced`。`AdvancedSettingsPage.vue` 也用同一份換算邏輯顯示這幾個唯讀欄位，兩邊不會
- * 算出不一致的結果。
+ * 從這支燈管目前回報的值算出 `newStation`/`commMode`/`baudRate`/`format` 的預設值，供
+ * `AdvancedSettingsPage.vue` 切換分頁時預填表單——跟 `currentMainFields` 同一個套路，
+ * 差別在這裡預填後使用者可以編輯再送出，不是原樣回填。
  */
 export function lockedAdvancedFields(lamp: LampStatus | undefined, fallbackId: number) {
   return {
@@ -68,18 +60,37 @@ export function lockedAdvancedFields(lamp: LampStatus | undefined, fallbackId: n
 }
 
 /**
+ * `SET_MAIN` 現在同時帶 `ON_OFF`/`SV`/`M_A`/`NUN`，但畫面上這幾個欄位分散在不同頁面
+ * （Run/Stop 按鈕、設定溫度、進階設定的控制模式/NUN），每次只有其中一兩項是使用者真的要改的。
+ * 這裡從該燈管目前回報的值算出「維持不變」的其餘欄位，呼叫端只要 override 真正要改的那項——
+ * 跟 `lockedAdvancedFields` 同一個套路。
+ */
+export function currentMainFields(lamp: LampStatus | undefined): SetMainParams {
+  return {
+    on: (lamp?.ON_OFF ?? 0) === 0,
+    sv: lamp?.SV ?? 0,
+    controlMode: lamp?.M_A ?? 0,
+    nUn: lamp?.NUN ?? 0,
+  };
+}
+
+/**
  * 每個指令的位置參數名稱，跟 `commandText` 組字串的順序一一對應。
  * 只給 `describeCommand` 用來把送出的指令標註成看得懂的形式，不影響實際送出的內容。
+ * `SET_MAIN` 給陣列而不是單一組固定長度——AUTO 不帶 NUN 只有 4 個參數，MANUAL 才有 5 個。
  */
-const COMMAND_FIELD_NAMES: Record<string, readonly string[]> = {
-  SET_MAIN: ['currentID', 'ON_OFF'],
-  SET_SET: ['currentID', 'AL1', 'AL2', 'AT', 'TU', 'P', 'I', 'D', 'GAIN', 'INT', 'UNT', 'DP', 'M_A', 'SV'],
-  SET_ADVANCED: ['currentID', 'newID', 'RS', 'BPS', 'BIT', 'M_A', 'NUN'],
+const COMMAND_FIELD_NAMES: Record<string, readonly (readonly string[])[]> = {
+  SET_MAIN: [
+    ['currentID', 'ON_OFF', 'SV', 'M_A'],
+    ['currentID', 'ON_OFF', 'SV', 'M_A', 'NUN'],
+  ],
+  SET_PARAMETER: [['currentID', 'INT', 'UNT', 'DP', 'SHT', 'AT', 'TU', 'P', 'I', 'D', 'GAIN', 'AL1', 'AL2']],
+  SET_ADVANCED: [['currentID', 'newID', 'RS', 'BPS', 'BIT']],
 };
 
 /**
- * 把 `SET_SET(1,50,50,...)` 這種送出的指令行標註成 `currentID=1, AL1=50, AL2=50, ...`，
- * 方便直接對照每個位置對應哪個欄位，不用另外開 PROTOCOL.md 數順序。
+ * 把 `SET_PARAMETER(1,1,0,0,0,0,0,6,120,30,1.0,50,50)` 這種送出的指令行標註成
+ * `currentID=1, INT=1, ...`，方便直接對照每個位置對應哪個欄位，不用另外開 PROTOCOL.md 數順序。
  * 認不出指令名稱、或參數數量跟 `COMMAND_FIELD_NAMES` 對不上時回傳 null。
  */
 export function describeCommand(line: string): string | null {
@@ -87,27 +98,30 @@ export function describeCommand(line: string): string | null {
   if (!match) return null;
 
   const [, cmd, argsText] = match;
-  const names = COMMAND_FIELD_NAMES[cmd!];
-  if (!names) return null;
+  const candidates = COMMAND_FIELD_NAMES[cmd!];
+  if (!candidates) return null;
 
   const values = (argsText ?? '').split(',');
-  if (values.length !== names.length) return null;
+  const names = candidates.find((c) => c.length === values.length);
+  if (!names) return null;
 
   return names.map((name, idx) => `${name}=${values[idx]}`).join(', ');
 }
 
-/** PC → Arduino 的指令字串；格式見 README.txt（指令名稱後直接接括號、逗號分隔的位置參數） */
+/** PC → Arduino 的指令字串；格式見 docs/PROTOCOL.md v4 草案（指令名稱後直接接括號、逗號分隔的位置參數） */
 export const commandText = {
   // 第一個參數是設定站號（1~255），三個指令都用同一支溫控器目前的站號定址
-  setMain: (station: number, on: boolean) => `SET_MAIN(${station},${on ? 0 : 1})`, // 控制器 ON:0 / OFF:1
+  // AUTO（M_A=0）不帶 NUN，MANUAL（M_A=1）才帶——避免自動模式下 NUN 被當成格式/數值錯誤拒絕
+  // （v3 的 SET_ADVANCED 有這問題，見 docs/DEVICE-CHECKLIST.md G7），2026-08-18 討論定案，待實機驗證
+  setMain: (station: number, p: SetMainParams) =>
+    p.controlMode === 0
+      ? `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode})` // 控制器 ON:0 / OFF:1
+      : `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode},${p.nUn})`,
 
-  // controlMode（M_A）不是 SettingsPage.vue 表單管的欄位，由呼叫端（store.ts）從目前回報值帶入，
-  // 見上面 SetSetParams 的說明——這欄位是不是真的要放這裡，還在等這次改動的實測結果
-  setSet: (station: number, p: SetSetParams, controlMode: number) =>
-    `SET_SET(${station},${p.al1},${p.al2},${p.autoTune},${p.offset},${p.p},${p.i},${p.d},${p.gain},${p.sensorType},${p.unit},${p.decimal},${controlMode},${p.sv})`,
+  setParameter: (station: number, p: SetParameterParams) =>
+    `SET_PARAMETER(${station},${p.sensorType},${p.unit},${p.decimal},${p.sht},${p.autoTune},${p.offset},${p.p},${p.i},${p.d},${p.gain},${p.al1},${p.al2})`,
 
-  // 7 參數，跟 README.txt 一致；BPS 送的是實際 bps，不是下拉選單索引，跟 RS/BIT/M_A 不同，
-  // 見 SetAdvancedParams 上方的說明（3 參數版本試過，被 SET_ERROR(ADVANCED,FORMAT) 拒絕）
+  // 5 參數（拿掉 v3 的 M_A/NUN，見 SetAdvancedParams 上方說明）；BPS 送的是實際 bps，不是下拉選單索引
   setAdvanced: (station: number, p: SetAdvancedParams) =>
-    `SET_ADVANCED(${station},${p.newStation},${p.commMode},${BAUD_RATE_VALUES[p.baudRate] ?? BAUD_RATE_VALUES[0]},${p.format},${p.controlMode},${p.nUn})`,
+    `SET_ADVANCED(${station},${p.newStation},${p.commMode},${BAUD_RATE_VALUES[p.baudRate] ?? BAUD_RATE_VALUES[0]},${p.format})`,
 };

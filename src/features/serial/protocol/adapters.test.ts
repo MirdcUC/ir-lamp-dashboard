@@ -49,6 +49,12 @@ describe('parenField23Adapter', () => {
   it('只有括號沒有任何已知欄位時不產生資料', () => {
     expect(parenField23Adapter.parse('(FOO:1)')).toEqual([]);
   });
+
+  it('v4 草案多帶 SHT 欄位時也能解析，不影響 v3 沒有 SHT 的行（見 docs/DEVICE-CHECKLIST.md H2）', () => {
+    expect(parenField23Adapter.parse('(ID:1,PV:70,SHT:123)')).toEqual([{ id: 1, fields: { ID: '1', PV: '70', SHT: '123' } }]);
+    // v3 沒有 SHT 的行維持原樣，fields 裡不會多出 SHT 的空值
+    expect(parenField23Adapter.parse('(ID:1,PV:70)')).toEqual([{ id: 1, fields: { ID: '1', PV: '70' } }]);
+  });
 });
 
 describe('createProtocolDecoder', () => {

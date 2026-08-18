@@ -37,7 +37,7 @@ src/
 ├── features/
 │   ├── serial/       # the engine — protocol, connection, simulator, state, all in one feature
 │   ├── dashboard/     # main monitoring screen
-│   ├── settings/      # SET_SET screen
+│   ├── settings/      # SET_PARAMETER screen
 │   └── advanced-settings/  # SET_ADVANCED screen
 └── shared/            # cross-feature: TopBar/LampTabs, utils, styles, settingsShared.ts
 ```
@@ -48,17 +48,17 @@ advanced-settings screens depend on it.
 
 ### The `features/serial/` engine
 
-- `protocol/` — pluggable line-format adapters for the two confirmed formats (`idPrefixedAdapter` for
-  the existing per-lamp status line, `mergedLineAdapter` for the newer unpaged all-fields line — see
-  PROTOCOL.md). Per PROTOCOL.md both lines are sent concurrently, not as mutually-exclusive candidates,
-  so the decoder classifies **each line independently** against every adapter rather than locking onto
-  one for the whole connection.
+- `protocol/` — pluggable line-format adapters; currently one confirmed format, `parenField23Adapter`
+  (parenthesised, comma-separated `key:value` fields — see docs/PROTOCOL.md). Field lookup is by key
+  name, not position, so the same adapter transparently handles both v3 (23 fields) and the v4 draft
+  (24 fields, adds `SHT`) — a line missing a key just omits it from the parsed frame instead of failing.
 - `connection.ts` — raw Web Serial read/write. Knows nothing about the protocol; just line I/O.
 - `simulator.ts` — produces text lines in the **same formats** the real adapters parse (both formats,
   every tick), so simulated data flows through the identical decode → state pipeline as real hardware.
-  Any UI action (SV, Run/Stop,
-  AT, PID, SET_SET, SET_ADVANCED) that's wired through `store.ts`'s `dispatch()` actually mutates the
-  simulator's internal state and shows up in the next emitted line — it isn't just background noise.
+  Any UI action (Run/Stop, SV, control mode, manual output — bundled into `SET_MAIN` in the v4 draft;
+  AT/PID/alarm/`SHT` via `SET_PARAMETER`) that's wired through `store.ts`'s `dispatch()` actually
+  mutates the simulator's internal state and shows up in the next emitted line — it isn't just
+  background noise.
 - `lampState.ts` — holds per-lamp status/PID/protocol-status plus a **station ↔ local-id routing table**.
   Local lamp ids (1–4, fixed to the UI tabs) are separate from the device "station" address, which can be
   changed at runtime via SET_ADVANCED (`setStation`). Incoming frames are routed by looking up the
@@ -69,8 +69,9 @@ advanced-settings screens depend on it.
   comparing the next reported value against what was sent, with a tolerance and timeout
   (`COMMAND_TOLERANCE`, `COMMAND_TIMEOUT_MS` in `constants.ts`). Status flows
   `pending → confirmed` (matched) or `pending → unconfirmed` (timed out, result unknown — never
-  auto-retried). Some commands (manual output %) aren't verifiable at all since the controller's own PID
-  overwrites the value; those go straight to `sent`.
+  auto-retried). `SET_ADVANCED` isn't verifiable via read-back at all (the fields it still carries in
+  the v4 draft — `newStation`/`RS`/`BPS`/`BIT` — are usually sent unchanged, so a match would be
+  meaningless); it relies entirely on the `SET_OK`/`SET_ERROR` reply line instead (`setResult.ts`).
 - `store.ts` — the Pinia store wiring all of the above together. `dispatch()` is the single fork point
   between real hardware (`connection.write`) and simulation (calls straight into `simulator.ts`) — every
   new control command should go through it rather than branching on `isSimulating` elsewhere.

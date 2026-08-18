@@ -1,14 +1,18 @@
 /**
- * `SET_MAIN`/`SET_SET`/`SET_ADVANCED` 的回覆行，格式見 PROTOCOL.md：
+ * `SET_MAIN`/`SET_PARAMETER`/`SET_ADVANCED` 的回覆行，格式見 PROTOCOL.md：
  *   成功：SET_OK(MAIN,ID:1) / SET_OK(SET,ID:1) / SET_OK(ADVANCED,ID:1)
  *   錯誤：SET_ERROR(PARAM:SV,CODE:14,MIN:...,MAX:...) 或不帶參數細節的 SET_ERROR(...)
  *
- * 這跟 23 欄狀態回報是完全不同的兩種行，所以不走 `ProtocolAdapter`/`ParsedFrame` 那一套
+ * 這跟狀態回報是完全不同的兩種行，所以不走 `ProtocolAdapter`/`ParsedFrame` 那一套
  * （那套是「一行 = 一支燈管的欄位快照」，這裡是「一行 = 一道指令的執行結果」），用獨立的
  * 純函式解析，由 store.ts 的 handleLine 在 decoder 之前先試一次。
+ *
+ * v4 草案把 `SET_SET` 改名 `SET_PARAMETER`（見 docs/DEVICE-CHECKLIST.md H2），但 pptx 沒有
+ * 給回覆行範例，不確定韌體會回 `SET_OK(SET,...)` 還是 `SET_OK(PARAMETER,...)`——兩種都接受，
+ * 等實機資料核對後再拿掉不用的那個分支。
  */
 
-export type SetResultCommand = 'MAIN' | 'SET' | 'ADVANCED';
+export type SetResultCommand = 'MAIN' | 'SET' | 'PARAMETER' | 'ADVANCED';
 
 export interface SetOkResult {
   kind: 'ok';
@@ -30,7 +34,7 @@ export interface SetErrorResult {
 
 export type SetResult = SetOkResult | SetErrorResult;
 
-const OK_RE = /^SET_OK\((MAIN|SET|ADVANCED),ID:(\d+)\)$/;
+const OK_RE = /^SET_OK\((MAIN|SET|PARAMETER|ADVANCED),ID:(\d+)\)$/;
 const ERROR_PARAM_RE = /^SET_ERROR\(PARAM:([A-Za-z0-9_]+),CODE:(-?\d+)(?:,MIN:(-?[\d.]+),MAX:(-?[\d.]+))?\)$/;
 const ERROR_RE = /^SET_ERROR\((.*)\)$/;
 

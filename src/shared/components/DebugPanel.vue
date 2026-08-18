@@ -2,7 +2,7 @@
   <el-card shadow="never" class="debug-panel mb-4">
     <template #header>
       <div class="flex items-center justify-between">
-        <span class="font-bold">連線診斷</span>
+        <span class="font-bold">連線診斷 · 溫控器 {{ activeLampId }}</span>
         <div class="flex items-center gap-2">
           <el-button size="small" :type="paused ? 'warning' : undefined" @click="togglePause">
             {{ paused ? '繼續接收' : '暫停接收' }}
@@ -46,13 +46,8 @@
       <template v-if="pausedBehindCount > 0">（暫停期間又新增了 {{ pausedBehindCount }} 行）</template>。
     </div>
 
-    <el-tabs v-if="idTabs.length > 1" v-model="activeIdTab" class="id-tabs">
-      <el-tab-pane label="全部" name="all" />
-      <el-tab-pane v-for="id in idTabs" :key="id" :label="`ID ${id}`" :name="id" />
-    </el-tabs>
-
     <Transition name="tab-fade" mode="out-in">
-      <div v-if="displayLines.length" :key="activeIdTab" class="raw-list">
+      <div v-if="displayLines.length" :key="activeLampId" class="raw-list">
         <div
           v-for="(line, idx) in filteredLines"
           :key="idx"
@@ -71,16 +66,17 @@
             {{ describeCommand(line.text) }}
           </div>
         </div>
-        <div v-if="filteredLines.length === 0" class="empty">這個 ID 目前沒有原始資料。</div>
+        <div v-if="filteredLines.length === 0" class="empty">這台溫控器目前沒有原始資料。</div>
       </div>
     </Transition>
   </el-card>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useSerialStore } from '@/features/serial/store';
+import { activeLampId } from '@/features/serial/activeLamp';
 import type { RawLine } from '@/features/serial/diagnostics';
 import { describeCommand } from '@/features/serial/commands';
 
@@ -123,7 +119,7 @@ const isSetOk = (text: string) => text.trim().startsWith('SET_OK(');
 const isSetError = (text: string) => text.trim().startsWith('SET_ERROR(');
 
 // 收到的狀態行是 `id:1` 這種 key:value；送出的指令行是 `SET_SET(1,...)`，站號是括號內第一個
-// 參數。兩種都直接從原始文字抓，不依賴解析結果，即使解析失敗也還是能照 ID 分頁看
+// 參數。兩種都直接從原始文字抓，不依賴解析結果，即使解析失敗也還是能照目前選取的燈管過濾
 const extractId = (text: string) => {
   const kv = /(?:^|[,(])id\s*:\s*(\d+)/i.exec(text);
   if (kv) return kv[1]!;
@@ -131,28 +127,18 @@ const extractId = (text: string) => {
   return cmd ? cmd[1]! : null;
 };
 
-const idTabs = computed(() => {
-  const seen = new Set<string>();
-  for (const line of displayLines.value) {
-    const id = extractId(line.text);
-    if (id) seen.add(id);
-  }
-  return [...seen].sort((a, b) => Number(a) - Number(b));
-});
+// 目前選取的卡片可能換過站號（見 lampState.ts 的路由表），要用「這張卡片目前的站號」比對，
+// 不能直接拿本地 lamp id 跟原始資料裡的站號比
+const activeStation = computed(() => String(store.getStation(activeLampId.value)));
 
-const activeIdTab = ref<string>('all');
-
-// 板子換過站號設定，原本選的 ID 分頁可能消失，這時退回「全部」，不要停在一個空分頁上
-watch(idTabs, tabs => {
-  if (activeIdTab.value !== 'all' && !tabs.includes(activeIdTab.value)) {
-    activeIdTab.value = 'all';
-  }
-});
-
+// SET_ERROR 這類回覆行協定本身沒有帶站號（見 commandTracker.ts 的 applyResult 說明），
+// extractId 一律解析成 null——這種「解不出站號」的行不該被篩掉，每個分頁都要看得到，
+// 不然會出現「畫面上顯示被拒絕了，但 debug 原始資料完全看不到那一行」的落差
 const filteredLines = computed(() =>
-  activeIdTab.value === 'all'
-    ? reversedLines.value
-    : reversedLines.value.filter(line => extractId(line.text) === activeIdTab.value),
+  reversedLines.value.filter(line => {
+    const id = extractId(line.text);
+    return id === null || id === activeStation.value;
+  }),
 );
 
 const formatTime = (at: number) =>
@@ -213,10 +199,6 @@ const copyRaw = async () => {
 .empty.is-warn {
   color: var(--el-color-warning);
   font-weight: 600;
-}
-
-.id-tabs {
-  margin-bottom: 8px;
 }
 
 .raw-list {

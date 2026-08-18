@@ -43,7 +43,7 @@
     <!-- 輸出 LED bar graph -->
     <div class="out-block">
       <div class="out-head">
-        <span class="out-label">現在輸出量</span>
+        <span class="out-label">實際輸出量</span>
         <span class="out-value">{{ status.UN !== null ? status.UN.toFixed(0) + ' %' : '-- %' }}</span>
       </div>
       <div class="out-bar" role="img" :aria-label="`輸出 ${status.UN ?? 0}%`">

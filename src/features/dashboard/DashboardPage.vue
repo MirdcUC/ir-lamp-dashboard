@@ -32,7 +32,7 @@ onMounted(() => {
 .dashboard {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 20px 20px 24px;
+  padding: 20px 20px 90px; /* 留空間給固定在底部的 SaveBar（LampDetailPanel.vue 的控制設定），避免蓋住內容 */
 }
 
 /* 中央即時狀態 + 右側燈管位置示意圖（總覽卡片），見 產線/紅外線控制模組_畫面.md 第 1 節版面 */

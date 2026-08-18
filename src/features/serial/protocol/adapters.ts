@@ -30,6 +30,11 @@ function pickFields(pairs: Record<string, string>, keys: readonly string[]): Rec
  *
  * `ID` 是設定站號（1~255），不一定等於 PC 端本地燈管 id（1~4）——兩者的對照由 `lampState.ts`
  * 的站號表負責，這裡只做最基本的格式檢查，不把 `ID` 限制在 `LAMP_IDS`。
+ *
+ * v4 草案（見 docs/DEVICE-CHECKLIST.md H 節，未經實機驗證）多了 `SHT` 欄位，變成 24 項。因為
+ * 這裡是 key:value 逗號分隔格式、`pickFields` 只挑 `LAMP_FIELD_KEYS` 裡有的 key，不管順序、
+ * 也不要求每個 key 都出現，所以同一個 adapter 可以同時吃 v3（沒有 SHT）跟 v4（有 SHT）的行，
+ * 不用另外開一個 adapter。
  */
 export const parenField23Adapter: ProtocolAdapter = {
   name: 'paren-field23',
