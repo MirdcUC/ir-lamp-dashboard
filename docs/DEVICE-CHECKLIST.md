@@ -89,7 +89,7 @@
 
 | # | 項目 | 說明 |
 |---|---|---|
-| G1 | ~~PC⇄Arduino 的 baud rate~~ | ~~PROTOCOL.md 定 115200，`hrdo_test_platform` 那邊是 9600~~ → **已由 README.txt 確認為 9600**，`constants.ts` 的 `BAUD_RATE` 已同步改掉 |
+| G1 | ~~PC⇄Arduino 的 baud rate~~ | ~~PROTOCOL.md 定 115200，`hrdo_test_platform` 那邊是 9600~~ → ~~已由 README.txt 確認為 9600~~ → **2026-08-20 韌體工程師來電改口為 115200**（目前僅電話口頭確認，尚無書面文件佐證），`constants.ts` 的 `BAUD_RATE`、`PROTOCOL.md` 已同步改回 115200，見 [issue #6](https://github.com/MirdcUC/ir-lamp-dashboard/issues/6) |
 | G2 | 上電後是否主動持續推送 | 本專案在連線當下就啟動讀取（`src/features/serial/store.ts`），不必等 PC 下令，直接每秒推即可；README.txt 已確認 Master 本來就持續推送 |
 | G3 | 換算責任歸屬 | 已由 README.txt 確認：Master 負責把 RAW 換算成工程值（例如 `GAIN` RAW×0.1）才送給 PC，PC 端不用猜小數位 |
 | G4 | 某台 Modbus 逾時要怎麼回報 | 目前 23 欄協定仍沒有「這台失聯」的欄位。前端仍靠「多久沒收到這個站號」推斷（`lampState.ts` 的 `STALE_AFTER_MS`/`OFFLINE_AFTER_MS`），沒有實質改善，建議還是跟韌體工程師提一次 |

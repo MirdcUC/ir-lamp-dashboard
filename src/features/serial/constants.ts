@@ -10,7 +10,7 @@ export const LAMP_IDS = [1, 2, 3, 4];
 // ─────────────────────────────────────────────────────────
 
 // 序列埠參數需與 Arduino 韌體一致，詳見 PROTOCOL.md
-export const BAUD_RATE = 9600;
+export const BAUD_RATE = 115200;
 
 /** SV 可輸入範圍；溫控器規格上限（999.9）不等於這條產線該有的溫度，待控制工程師確認 */
 export const SV_MIN = 0;
