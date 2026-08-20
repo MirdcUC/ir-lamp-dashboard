@@ -115,10 +115,16 @@ onUnmounted(() => window.clearInterval(clockTimer));
   white-space: nowrap;
 }
 
+/* 狀態燈放進內凹的小窗,跟時鐘同一套「嵌在鈑金上的模組」語彙 */
 .status-block {
   display: flex;
   align-items: center;
   gap: 8px;
+  background: var(--hmi-window);
+  border: 1px solid var(--hmi-panel-edge);
+  border-radius: 3px;
+  box-shadow: var(--hmi-window-inset);
+  padding: 4px 12px;
 }
 
 .status-led {
@@ -157,6 +163,7 @@ onUnmounted(() => window.clearInterval(clockTimer));
   white-space: nowrap;
 }
 
+/* 現場時鐘裝進顯示窗,讀起來像嵌在鈑金上的 LED 時鐘模組 */
 .clock {
   font-family: var(--hmi-digits);
   font-size: 1.125rem;
@@ -164,5 +171,10 @@ onUnmounted(() => window.clearInterval(clockTimer));
   color: var(--hmi-live-text);
   text-shadow: var(--hmi-live-glow);
   font-variant-numeric: tabular-nums;
+  background: var(--hmi-window);
+  border: 1px solid var(--hmi-panel-edge);
+  border-radius: 3px;
+  box-shadow: var(--hmi-window-inset);
+  padding: 3px 12px;
 }
 </style>

@@ -49,13 +49,25 @@
 
     <div class="panel-divider"><span>目前狀態</span></div>
     <div class="metric-grid">
-      <div class="metric metric-temp">
+      <div class="metric metric-temp hmi-glass">
         <span class="metric-label">現在溫度</span>
         <span class="metric-value">{{ fmt(status?.PV) }}<span class="metric-unit">{{ unitLabel }}</span></span>
       </div>
-      <div class="metric metric-out">
+      <div class="metric metric-out hmi-glass">
         <span class="metric-label">實際輸出量</span>
         <span class="metric-value">{{ fmt(status?.UN) }}<span class="metric-unit">%</span></span>
+      </div>
+      <!-- 門檻＝SV+AL（實機驗證過，見 docs/DEVICE-CHECKLIST.md E4）；AL1/AL2 設定值在參數設定頁跟
+           這裡不同頁，下面補一行算式，不然只看門檻數字會搞不清楚是怎麼算出來的 -->
+      <div class="metric metric-al hmi-glass" :class="{ 'alarm-active': isBitOn(status?.STATUS, STATUS_BITS.AL1) }">
+        <span class="metric-label">警報溫度1</span>
+        <span class="metric-value">{{ fmt(al1Threshold) }}<span class="metric-unit">{{ unitLabel }}</span></span>
+        <span class="metric-sub">{{ al1FormulaShort }}</span>
+      </div>
+      <div class="metric metric-al hmi-glass" :class="{ 'alarm-active': isBitOn(status?.STATUS, STATUS_BITS.AL2) }">
+        <span class="metric-label">警報溫度2</span>
+        <span class="metric-value">{{ fmt(al2Threshold) }}<span class="metric-unit">{{ unitLabel }}</span></span>
+        <span class="metric-sub">{{ al2FormulaShort }}</span>
       </div>
     </div>
 
@@ -75,7 +87,7 @@
 
     <div class="alarm-status">
       <span class="metric-label">警報狀態</span>
-      <div class="alarm-window">{{ alarmText }}</div>
+      <div class="alarm-window hmi-glass">{{ alarmText }}</div>
     </div>
   </el-card>
 
@@ -166,6 +178,24 @@ const alarmText = computed(() => {
   const codes = activeAlarmCodes(status.value?.ALARM);
   return codes.length > 0 ? codes.join('・') : '正常';
 });
+
+// 觸發條件 PV > SV + AL，實機測試驗證過（AL1/AL2 分開測、含低溫方向），見 docs/DEVICE-CHECKLIST.md E4
+const alarmThreshold = (al: number | null | undefined) =>
+  status.value?.SV != null && al != null ? status.value.SV + al : null;
+
+const al1Threshold = computed(() => alarmThreshold(status.value?.AL1));
+const al2Threshold = computed(() => alarmThreshold(status.value?.AL2));
+
+const formatTemp = (v: number) => `${v.toFixed(svPrecision.value)}${unitLabel.value}`;
+
+// 警報溫度卡片下面那行小字（30+10），門檻結果已經是卡片的大數字，這裡不重複寫「=40°C」
+const alarmFormulaShort = (al: number | null | undefined) => {
+  if (status.value?.SV == null || al == null) return '--';
+  return `${formatTemp(status.value.SV)} + ${formatTemp(al)}`;
+};
+
+const al1FormulaShort = computed(() => alarmFormulaShort(status.value?.AL1));
+const al2FormulaShort = computed(() => alarmFormulaShort(status.value?.AL2));
 </script>
 
 <style scoped>
@@ -258,7 +288,7 @@ const alarmText = computed(() => {
   border-top: 2px solid var(--hmi-accent-dim);
   border-radius: 3px;
   padding: 10px 12px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--hmi-window-inset);
 }
 
 .metric-temp {
@@ -267,6 +297,24 @@ const alarmText = computed(() => {
 
 .metric-out {
   border-top-color: var(--hmi-amber);
+}
+
+/* 邊框預設沿用 .metric 的青色強調邊（不跟現在溫度的紅撞色）；真的觸發那路警報才變紅——
+   顏色本身是動態警示，不是單純的類別裝飾 */
+.metric-al.alarm-active {
+  border-top-color: var(--hmi-alarm);
+}
+
+.metric-al.alarm-active .metric-value {
+  color: var(--hmi-led-red, var(--el-color-danger));
+}
+
+/* 算式（30+10）放大字下面一行小字，門檻結果已經是上面的大數字，這裡不重複寫 */
+.metric-sub {
+  font-family: var(--hmi-digits);
+  font-size: 0.75rem;
+  color: var(--hmi-text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
 .metric-label {
@@ -300,12 +348,21 @@ const alarmText = computed(() => {
   color: var(--hmi-text-dim);
 }
 
-.panel-divider::before,
+/* 左側一小段強調色走線導入標題(電路走線語彙),右側維持細線收尾 */
+.panel-divider::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 1px;
+  background: var(--hmi-accent);
+  box-shadow: 0 0 5px var(--hmi-accent-dim);
+}
+
 .panel-divider::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--hmi-panel-edge);
+  background: linear-gradient(90deg, var(--hmi-panel-edge), transparent);
 }
 
 .io-row {
@@ -359,7 +416,7 @@ const alarmText = computed(() => {
   border-top: 2px solid var(--hmi-accent-dim);
   border-radius: 3px;
   padding: 10px 12px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--hmi-window-inset);
   font-family: var(--hmi-digits);
   font-size: 1.125rem;
   font-weight: 700;

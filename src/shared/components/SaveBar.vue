@@ -22,9 +22,23 @@ defineEmits<{ save: [] }>();
   display: flex;
   justify-content: center;
   padding: 12px 20px;
-  background: var(--hmi-panel);
+  /* 半透明+模糊:內容從底下捲過去時看得出這條是浮在上面的操作列 */
+  background: color-mix(in srgb, var(--hmi-panel) 88%, transparent);
+  backdrop-filter: blur(6px);
   border-top: 1px solid var(--hmi-panel-edge);
   z-index: 10;
+}
+
+/* 上緣通電線,跟 .tech-panel 面板的走線同一套語彙 */
+.save-bar::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--hmi-accent-dim), transparent);
+  pointer-events: none;
 }
 
 .save-bar-inner {

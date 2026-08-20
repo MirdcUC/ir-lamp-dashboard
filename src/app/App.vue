@@ -2,13 +2,15 @@
   <div id="app" class="app-shell">
     <nav class="side-nav">
       <router-link
-        v-for="item in navItems"
+        v-for="(item, i) in navItems"
         :key="item.to"
         class="nav-item"
         :to="{ path: item.to, query: route.query }"
         active-class="is-active"
       >
-        {{ item.label }}
+        <!-- F1/F2/F3 對應實體 HMI 螢幕旁的功能鍵編號，純視覺語彙 -->
+        <span class="nav-key">F{{ i + 1 }}</span>
+        <span class="nav-label">{{ item.label }}</span>
       </router-link>
     </nav>
     <div class="main-column">
@@ -92,6 +94,26 @@ html, body {
   padding: 10px 12px;
   border-radius: 4px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 右上切角:呼應面板護角的斜切鈑金語彙 */
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-key {
+  font-family: var(--hmi-digits);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--hmi-accent);
+  border: 1px solid var(--hmi-accent-dim);
+  background: var(--hmi-accent-faint);
+  border-radius: 2px;
+  padding: 0 5px;
+  line-height: 1.5;
+  flex: none;
 }
 
 .nav-item:hover {
@@ -99,9 +121,21 @@ html, body {
   color: var(--hmi-text);
 }
 
+.nav-item:focus-visible {
+  outline: 2px solid var(--hmi-accent);
+  outline-offset: -2px;
+}
+
 .nav-item.is-active {
   background: var(--hmi-amber);
   color: #14171a;
+}
+
+/* 點亮的功能鍵:編號牌翻成深色,像實體按鍵的背光反轉 */
+.nav-item.is-active .nav-key {
+  color: #14171a;
+  border-color: rgba(20, 23, 26, 0.45);
+  background: rgba(20, 23, 26, 0.08);
 }
 
 .main-column {

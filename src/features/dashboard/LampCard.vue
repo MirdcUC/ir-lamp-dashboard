@@ -20,7 +20,7 @@
     <div v-if="hasAlarm" class="alarm-banner">▲ {{ alarmText }}</div>
 
     <!-- 顯示窗:復刻 NT-48L-RS 紅 PV 數碼管 -->
-    <div class="display-window">
+    <div class="display-window hmi-glass">
       <div class="readout readout-pv">
         <span class="readout-label">現在溫度</span>
         <span class="readout-value" :class="{ 'is-dim': status.PV === null || connection !== 'online' }">
@@ -143,6 +143,9 @@ const showUpdatedText = computed(() => !active.value || connection.value !== 'on
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--hmi-text);
+  /* 左側強調色刻線:機台銘牌的定位記號 */
+  border-left: 2px solid var(--hmi-accent);
+  padding-left: 7px;
 }
 
 .panel-name {
@@ -159,7 +162,12 @@ const showUpdatedText = computed(() => !active.value || connection.value !== 'on
 }
 
 .alarm-banner {
-  background: rgba(255, 69, 69, 0.14);
+  /* 危險斜紋底,呼應 TopBar 上緣的安全警示斜紋;透明度壓低不影響文字判讀 */
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 69, 69, 0.18) 0 10px,
+    rgba(255, 69, 69, 0.07) 10px 20px
+  );
   border: 1px solid var(--hmi-alarm);
   border-radius: 2px;
   color: var(--hmi-alarm);
@@ -266,12 +274,15 @@ const showUpdatedText = computed(() => !active.value || connection.value !== 'on
   font-variant-numeric: tabular-nums;
 }
 
+/* bar graph 也放進內凹顯示窗,跟上面的數碼管窗同一套「嵌在鈑金上的模組」層次 */
 .out-bar {
   display: flex;
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--hmi-panel-edge);
   border-radius: 3px;
+  background: var(--hmi-window);
+  box-shadow: var(--hmi-window-inset);
 }
 
 .out-seg {

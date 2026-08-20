@@ -39,6 +39,11 @@ html {
   --hmi-amber-text: var(--hmi-amber);
   --hmi-live-text: var(--hmi-led-green);
   --hmi-live-glow: 0 0 10px rgba(70, 224, 138, 0.35);
+  // 顯示窗玻璃質感（.hmi-glass）：暗色是 CRT 掃描線＋玻璃上緣微反光，亮色收斂成 LCD 淡紋理
+  --hmi-glass-scanline: rgba(255, 255, 255, 0.028);
+  --hmi-glass-glint: rgba(255, 255, 255, 0.05);
+  --hmi-window-inset: inset 0 1px 4px rgba(0, 0, 0, 0.35);
+  --hmi-accent-faint: rgba(53, 208, 255, 0.08); // 強調色的極淡底色，徽章/選取態填色用
 }
 
 // 亮色主題 — 鈑金外殼改為淺色噴漆
@@ -67,6 +72,10 @@ html:not(.dark) {
   --hmi-amber-text: #8a5d00;
   --hmi-live-text: #166b41;
   --hmi-live-glow: none;
+  --hmi-glass-scanline: rgba(0, 0, 0, 0.022);
+  --hmi-glass-glint: rgba(255, 255, 255, 0.4);
+  --hmi-window-inset: inset 0 1px 3px rgba(20, 24, 28, 0.12);
+  --hmi-accent-faint: rgba(8, 145, 178, 0.07);
 }
 
 // Element Plus 元件貼齊面板色調
@@ -103,6 +112,18 @@ html:not(.dark) {
   background-position: -1px -1px;
 }
 
+// 面板上緣的「通電線」：連接兩個上護角的微光走線，往中央淡出，讓面板讀起來像帶電的模組
+.tech-panel::after {
+  content: '';
+  position: absolute;
+  top: 0; // 不用 -1px:el-card 有 overflow hidden,壓在邊框外會整條被裁掉
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--hmi-accent-dim), transparent 30%, transparent 70%, var(--hmi-accent-dim));
+  pointer-events: none;
+}
+
 .frame-corner {
   position: absolute;
   width: 12px;
@@ -110,6 +131,7 @@ html:not(.dark) {
   border: 2px solid var(--hmi-accent);
   opacity: 0.7;
   pointer-events: none;
+  filter: drop-shadow(0 0 3px var(--hmi-accent-dim));
 }
 
 .corner-tl {
@@ -195,6 +217,38 @@ html:not(.dark) {
   }
 }
 
+// 顯示窗玻璃質感：掃描線 + 上緣反光，疊在既有的 --hmi-window 顯示窗上
+// 用法：跟 .display-window / .metric 這類顯示窗容器並用；覆蓋層 pointer-events: none 不擋操作。
+// 掃描線刻意壓在數字上面（實體數碼管隔著玻璃看就是這樣），透明度壓到不影響判讀
+.hmi-glass {
+  position: relative;
+}
+
+.hmi-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    var(--hmi-glass-scanline) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+.hmi-glass::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 32%;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--hmi-glass-glint), transparent);
+}
+
 // 段落編號牌，呼應 TopBar 的 MIRDC 銘牌
 .tech-tag {
   display: inline-flex;
@@ -205,6 +259,7 @@ html:not(.dark) {
   letter-spacing: 0.08em;
   color: var(--hmi-accent);
   border: 1px solid var(--hmi-accent);
+  background: var(--hmi-accent-faint);
   padding: 1px 7px;
   border-radius: 2px;
 }

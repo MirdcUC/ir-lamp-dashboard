@@ -23,4 +23,24 @@ import { activeLampId } from '@/features/serial/activeLamp';
 .lamp-tabs :deep(.el-tabs__nav-wrap::after) {
   display: none;
 }
+
+/* 分頁鈕貼齊 HMI 語彙:數碼管字體 + 青藍強調色,取代 Element 預設藍 */
+.lamp-tabs :deep(.el-tabs__item) {
+  font-family: var(--hmi-digits);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--hmi-text-dim);
+  transition: color 0.15s ease;
+}
+
+.lamp-tabs :deep(.el-tabs__item:hover),
+.lamp-tabs :deep(.el-tabs__item.is-active) {
+  color: var(--hmi-accent);
+}
+
+.lamp-tabs :deep(.el-tabs__active-bar) {
+  background: var(--hmi-accent);
+  box-shadow: 0 0 8px var(--hmi-accent-dim);
+  height: 3px;
+}
 </style>
