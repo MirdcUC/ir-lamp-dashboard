@@ -21,7 +21,7 @@ Arduino 負責透過 RS-485（Modbus RTU）與四台 FOTEK NT-48L-RS 溫控器�
 
 | 項目 | 值 |
 |------|-----|
-| Baud rate | 9600 |
+| Baud rate | 115200 |
 | Data bits / Parity / Stop | 8 / N / 1 |
 | 行結尾 | `\n`（PC 端也接受 `\r\n`） |
 | 編碼 | ASCII |
