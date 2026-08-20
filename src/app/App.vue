@@ -2,14 +2,12 @@
   <div id="app" class="app-shell">
     <nav class="side-nav">
       <router-link
-        v-for="(item, i) in navItems"
+        v-for="item in navItems"
         :key="item.to"
         class="nav-item"
         :to="{ path: item.to, query: route.query }"
         active-class="is-active"
       >
-        <!-- F1/F2/F3 對應實體 HMI 螢幕旁的功能鍵編號，純視覺語彙 -->
-        <span class="nav-key">F{{ i + 1 }}</span>
         <span class="nav-label">{{ item.label }}</span>
       </router-link>
     </nav>
@@ -102,20 +100,6 @@ html, body {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.nav-key {
-  font-family: var(--hmi-digits);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--hmi-accent);
-  border: 1px solid var(--hmi-accent-dim);
-  background: var(--hmi-accent-faint);
-  border-radius: 2px;
-  padding: 0 5px;
-  line-height: 1.5;
-  flex: none;
-}
-
 .nav-item:hover {
   background: var(--hmi-window);
   color: var(--hmi-text);
@@ -129,13 +113,6 @@ html, body {
 .nav-item.is-active {
   background: var(--hmi-amber);
   color: #14171a;
-}
-
-/* 點亮的功能鍵:編號牌翻成深色,像實體按鍵的背光反轉 */
-.nav-item.is-active .nav-key {
-  color: #14171a;
-  border-color: rgba(20, 23, 26, 0.45);
-  background: rgba(20, 23, 26, 0.08);
 }
 
 .main-column {
