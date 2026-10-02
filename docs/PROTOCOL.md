@@ -1,7 +1,7 @@
 # USB 串列通訊協定（PC ⇄ Arduino）
 
 儀表板（瀏覽器 Web Serial API）與 Arduino 之間的通訊協定。
-Arduino 負責透過 RS-485（Modbus RTU）與四台 FOTEK NT-48L-RS 溫控器溝通，
+Arduino 負責透過 RS-485（Modbus RTU）與七台 FOTEK NT-48L-RS 溫控器溝通，
 並把狀態轉成下列文字協定回報給 PC。
 
 > **版本狀態：本文件目前記錄的是 v4 草案，🚧 尚未用實機資料核對過。** 依韌體工程師 2026-08-17
@@ -30,7 +30,7 @@ Arduino 負責透過 RS-485（Modbus RTU）與四台 FOTEK NT-48L-RS 溫控器�
 
 ## 燈管編號
 
-- `id`（本地燈管 id）= 1 ~ 4，對應四支紅外線燈管，固定給 UI 分頁使用。
+- `id`（本地燈管 id）= 1 ~ 7，對應七支紅外線燈管，固定給 UI 分頁使用。
 - `ID`（協定欄位，設定站號）= 1 ~ 255，是 Modbus 站號，**不一定等於本地 id**——進階設定的
   `SET_ADVANCED` 可以把某支燈管的站號改成別的值。兩者的對照表在
   `src/features/serial/lampState.ts`，預設「站號 = id」。
@@ -47,7 +47,7 @@ Arduino 每台 NT-48L-RS 每次回報一行，用括號包住、逗號分隔的�
 > `SHT:0` 是本文件依 v4 草案手動插入示範用，**不是實機收到的真實範例**——2026-08-14 收到的
 > 那行實機資料是 v3（23 項，沒有 `SHT`）。上面這行只是示意 `SHT` 加進去之後長什麼樣子。
 
-四台輪流各發一行，每支燈管的資料持續、高頻回報，**不需要另外的讀取指令**——設定畫面/進階設定
+七台輪流各發一行，每支燈管的資料持續、高頻回報，**不需要另外的讀取指令**——設定畫面/進階設定
 畫面要顯示目前設定值時，直接讀該燈管最新收到的這一行即可。
 
 固定順序（v4 草案，依 pptx 的中英對照表順序；v3 順序見「修訂紀錄」表格）：
@@ -91,7 +91,7 @@ BPS  RAW=0   -> BPS:9600
 | 11 | `UNT` | Unit selecting | R/W | 0=°C, 1=°F | 溫度單位，影響 SV/PV/AL1/AL2 的解讀 |
 | 12 | `DP` | Decimal point setting | R/W | 0=無小數, 1=一位小數 | 小數點設定 |
 | 13 | `SHT` | Input correction | R/W | -999~9999 | **v4 新欄位**（🚧 未經實機驗證）：輸入修正，推測是感測器校正偏移量；暫存器位址、精度、寫入行為都待跟韌體工程師確認，見 `docs/DEVICE-CHECKLIST.md` H2 |
-| 14 | `ID` | Station No. | R/W | 1~255 | Modbus 站號；本專案四台用 1~4 |
+| 14 | `ID` | Station No. | R/W | 1~255 | Modbus 站號；本專案七台用 1~7 |
 | 15 | `RS` | Communication mode | R/W | 0=RTU, 1=ASCII | 本專案固定 RTU |
 | 16 | `BPS` | Baud rate | R/W | 9600/19200/38400 | NT-48L-RS 的 RS-485 通訊速度（實際 bps，不是 Master↔PC 的 Serial 速度） |
 | 17 | `BIT` | Data configuration | R/W | 0=7O1,1=7E1,2=8N1,3=8O1,4=8E1,5=8N2 | RS-485 資料格式 |
@@ -215,7 +215,7 @@ read-back；`SET_ERROR` 沒有帶站號/指令種類，用送出順序的佇列�
 
 - NT-48L-RS 的 Modbus 暫存器位址（PV/SV/OUT/RUN/AT/PID 等）**需依 FOTEK 原廠手冊確認**，
   本文件不假設位址；站號、鮑率也要與溫控器面板設定一致。
-- 建議輪詢週期 1 秒（4 台 × 每台數個暫存器）。
+- 建議輪詢週期 1 秒（7 台 × 每台數個暫存器）；7 台實際能壓到多快待韌體工程師確認，見 DEVICE-CHECKLIST.md G9。
 - RS-485 匯流排上一次只能有一問一答，輪詢與寫入指令需排隊處理。
 
 ## 修訂紀錄

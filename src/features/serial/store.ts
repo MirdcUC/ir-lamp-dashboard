@@ -227,7 +227,7 @@ export const useSerialStore = defineStore('serial', () => {
     }
   };
 
-  /** 啟動模擬；autoRun=true 時四支燈管直接開始加熱（?mock=1 用） */
+  /** 啟動模擬；autoRun=true 時七支燈管直接開始加熱（?mock=1 用） */
   const startSimulation = (autoRun = false) => {
     if (isConnected.value) {
       ElMessage.warning('已連線實際裝置，請先斷線再啟動模擬');
@@ -238,7 +238,7 @@ export const useSerialStore = defineStore('serial', () => {
 
     isSimulating.value = true;
     startClock();
-    ElMessage.success(autoRun ? '模擬模式已啟動（四支燈管自動運轉）' : '模擬模式已啟動');
+    ElMessage.success(autoRun ? '模擬模式已啟動（七支燈管自動運轉）' : '模擬模式已啟動');
   };
 
   const stopSimulation = () => {

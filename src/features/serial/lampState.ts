@@ -10,7 +10,7 @@ import {
 } from './constants';
 import type { ParsedFrame } from './protocol';
 
-/** 四支燈管的即時狀態與資料新鮮度；實機與模擬資料都經由 applyFrames 進來 */
+/** 七支燈管的即時狀態與資料新鮮度；實機與模擬資料都經由 applyFrames 進來 */
 export function createLampState() {
   const lamps: Ref<Record<number, LampStatus>> = ref(buildLampMap(initLampStatus));
   const lastUpdatedAt: Ref<Record<number, number | null>> = ref(buildLampMap<number | null>(null));

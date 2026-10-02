@@ -1,8 +1,8 @@
 import type { LampStatus } from './types';
 import { deepClone } from '@/shared/utils';
 
-/** 燈管編號 1~4，協定中 id=0 代表廣播給全部 */
-export const LAMP_IDS = [1, 2, 3, 4];
+/** 燈管編號 1~7，協定中 id=0 代表廣播給全部 */
+export const LAMP_IDS = [1, 2, 3, 4, 5, 6, 7];
 
 // ─────────────────────────────────────────────────────────
 // 待現場確認的參數：板子到貨、製程條件定案後只改這一區，
