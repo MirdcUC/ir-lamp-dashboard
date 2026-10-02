@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-page dashboard (Vue 3 + Vite + TypeScript) that monitors and controls 4 IR lamp temperature
+A single-page dashboard (Vue 3 + Vite + TypeScript) that monitors and controls 7 IR lamp temperature
 controllers (FOTEK NT-48L-RS) on a production line. The browser talks to an Arduino over the Web Serial
-API; the Arduino polls the 4 controllers over RS-485 (Modbus RTU) and relays plain-text lines back.
+API; the Arduino polls the 7 controllers over RS-485 (Modbus RTU) and relays plain-text lines back.
 
 The wire protocol itself is defined in [PROTOCOL.md](./docs/PROTOCOL.md); open questions for the firmware
 engineer are tracked in [DEVICE-CHECKLIST.md](./docs/DEVICE-CHECKLIST.md) (has a "還沒確認"/G-section — check
@@ -25,7 +25,7 @@ npm run build            # vue-tsc -b (type-check) + vite build
 ```
 
 Useful query params during manual testing (see README.md for the full list): `?mock=1` boots straight
-into simulation with all 4 lamps running; `?debug=1` shows the raw-line/parse-rate diagnostics panel.
+into simulation with all 7 lamps running; `?debug=1` shows the raw-line/parse-rate diagnostics panel.
 
 ## Architecture
 
@@ -60,7 +60,7 @@ advanced-settings screens depend on it.
   mutates the simulator's internal state and shows up in the next emitted line — it isn't just
   background noise.
 - `lampState.ts` — holds per-lamp status/PID/protocol-status plus a **station ↔ local-id routing table**.
-  Local lamp ids (1–4, fixed to the UI tabs) are separate from the device "station" address, which can be
+  Local lamp ids (1–7, fixed to the UI tabs) are separate from the device "station" address, which can be
   changed at runtime via SET_ADVANCED (`setStation`). Incoming frames are routed by looking up the
   reported station in this table; if you change how station addressing works, `simulator.ts` must keep
   emitting its `Id` field as the *current* station (`SimLamp.station`), or simulated frames silently stop
