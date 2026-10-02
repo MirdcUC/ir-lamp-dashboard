@@ -136,8 +136,8 @@ export function createSimulator(options: SimulatorOptions) {
   const start = (autoRun: boolean) => {
     if (timer) return false;
 
-    // 加熱特性刻意做出差異，趨勢圖四條曲線才不會疊在一起
-    const heatGains = [1.0, 0.93, 1.06, 0.87];
+    // 加熱特性刻意做出差異，趨勢圖各條曲線才不會疊在一起
+    const heatGains = [1.0, 0.93, 1.06, 0.87, 1.03, 0.96, 0.9];
     LAMP_IDS.forEach((id, idx) => {
       state[id] = {
         pv: SIM_AMBIENT + Math.random() * 3,

@@ -28,7 +28,7 @@ function pickFields(pairs: Record<string, string>, keys: readonly string[]): Rec
  * 實機一行長這樣：
  * `(NUN:0,AL1:50,AL2:50,AT:0,TU:0,P:6,I:120,D:30,GAIN:1.0,INT:1,UNT:0,DP:0,ID:1,RS:0,BPS:9600,BIT:2,ON_OFF:0,M_A:0,SV:0,PV:29,UN:0,STATUS:0,ALARM:0)`
  *
- * `ID` 是設定站號（1~255），不一定等於 PC 端本地燈管 id（1~4）——兩者的對照由 `lampState.ts`
+ * `ID` 是設定站號（1~255），不一定等於 PC 端本地燈管 id（1~7）——兩者的對照由 `lampState.ts`
  * 的站號表負責，這裡只做最基本的格式檢查，不把 `ID` 限制在 `LAMP_IDS`。
  *
  * v4 草案（見 docs/DEVICE-CHECKLIST.md H 節，未經實機驗證）多了 `SHT` 欄位，變成 24 項。因為

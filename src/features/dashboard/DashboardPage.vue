@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard">
-    <!-- 中央:目前選取溫控器的即時狀態；右側:燈管位置示意圖（四支燈管卡片總覽） -->
+    <!-- 中央:目前選取溫控器的即時狀態；右側:燈管位置示意圖（七支燈管卡片總覽） -->
     <div class="dashboard-layout">
       <LampDetailPanel class="detail-col" />
       <div class="lamp-grid">
@@ -20,7 +20,7 @@ const store = useSerialStore();
 
 const params = new URLSearchParams(window.location.search);
 
-// 網址帶 ?mock=1 時直接跑假數據展示（四支燈管自動運轉，同時吐兩種協定格式）
+// 網址帶 ?mock=1 時直接跑假數據展示（七支燈管自動運轉，同時吐兩種協定格式）
 onMounted(() => {
   if (params.has('mock')) {
     store.startSimulation(true);

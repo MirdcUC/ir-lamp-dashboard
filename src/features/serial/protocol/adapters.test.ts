@@ -32,7 +32,7 @@ describe('parenField23Adapter', () => {
     expect(parenField23Adapter.parse(' ( ID : 4 , PV : 66.5 ) ')).toEqual([{ id: 4, fields: { ID: '4', PV: '66.5' } }]);
   });
 
-  it('站號不限於 LAMP_IDS（1~4），改過站號的燈管也能解析——站號與卡片的對照交給 lampState 處理', () => {
+  it('站號不限於 LAMP_IDS（1~7），改過站號的燈管也能解析——站號與卡片的對照交給 lampState 處理', () => {
     expect(parenField23Adapter.parse('(ID:5,PV:70)')).toEqual([{ id: 5, fields: { ID: '5', PV: '70' } }]);
   });
 

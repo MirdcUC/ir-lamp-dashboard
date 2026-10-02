@@ -53,6 +53,17 @@ describe('模擬器 → 解析 → 燈管狀態', () => {
     simulator.stop();
   });
 
+  it('產線共 7 支燈管，第 7 支也拿得到自己的資料', () => {
+    const { state, simulator } = wire();
+    simulator.start(true);
+    vi.advanceTimersByTime(1000);
+
+    expect(LAMP_IDS).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(state.lamps.value[7]?.PV).toBeTypeOf('number');
+    expect(state.lamps.value[7]?.ID).toBe(7);
+    simulator.stop();
+  });
+
   it('SET_MAIN 寫入的 SV 會由回報值反映出來', () => {
     const { state, simulator } = wire();
     simulator.start(true);
