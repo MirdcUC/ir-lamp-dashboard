@@ -14,18 +14,18 @@ describe('commandText.setMain', () => {
 });
 
 describe('commandText.setParameter', () => {
-  it('組出 14 參數：currentID,dSPL,dSPH,UNT,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2（v4 草案，原 SET_SET）', () => {
+  it('組出 13 參數：currentID,dSPL,dSPH,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2（v4 草案，原 SET_SET）', () => {
     const params = {
-      rangeLow: 0, rangeHigh: 400.5, unit: 0, decimal: 0, sht: 0,
+      rangeLow: 0, rangeHigh: 400.5, decimal: 0, sht: 0,
       autoTune: 0, offset: 0, p: 6, i: 120, d: 30, gain: 1.0,
       al1: 50, al2: 50,
     };
-    expect(commandText.setParameter(1, params)).toBe('SET_PARAMETER(1,0.0,400.5,0,0,0,0,0,6,120,30,1,50,50)');
+    expect(commandText.setParameter(1, params)).toBe('SET_PARAMETER(1,0.0,400.5,0,0,0,0,6,120,30,1,50,50)');
   });
 
   it('量程上下限固定送一位小數，多打的位數四捨五入掉', () => {
     const params = {
-      rangeLow: -10.26, rangeHigh: 300, unit: 0, decimal: 0, sht: 0,
+      rangeLow: -10.26, rangeHigh: 300, decimal: 0, sht: 0,
       autoTune: 0, offset: 0, p: 6, i: 120, d: 30, gain: 1.0,
       al1: 50, al2: 50,
     };
@@ -47,9 +47,9 @@ describe('commandText.setAdvanced', () => {
 });
 
 describe('describeCommand', () => {
-  it('SET_PARAMETER 標註成 14 個具名欄位（原 SET_SET，見 SetParameterParams 的說明）', () => {
-    expect(describeCommand('SET_PARAMETER(1,0.0,400.0,0,0,0,0,0,6,120,30,1.0,50,50)')).toBe(
-      'currentID=1, dSPL=0.0, dSPH=400.0, UNT=0, DP=0, SHT=0, AT=0, TU=0, P=6, I=120, D=30, GAIN=1.0, AL1=50, AL2=50',
+  it('SET_PARAMETER 標註成 13 個具名欄位（原 SET_SET，見 SetParameterParams 的說明）', () => {
+    expect(describeCommand('SET_PARAMETER(1,0.0,400.0,0,0,0,0,6,120,30,1.0,50,50)')).toBe(
+      'currentID=1, dSPL=0.0, dSPH=400.0, DP=0, SHT=0, AT=0, TU=0, P=6, I=120, D=30, GAIN=1.0, AL1=50, AL2=50',
     );
   });
 

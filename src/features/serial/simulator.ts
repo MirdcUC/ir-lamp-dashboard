@@ -25,7 +25,7 @@ interface SimLamp {
   al2: number;
   rangeLow: number;        // dSPL
   rangeHigh: number;       // dSPH
-  unit: number;            // UNT
+  unit: number;            // UNT，SET_PARAMETER 不再寫入，維持初始值原樣回報
   decimal: number;         // DP
   sht: number;              // SHT（輸入修正），v4 新欄位
   offset: number;          // TU
@@ -208,7 +208,6 @@ export function createSimulator(options: SimulatorOptions) {
     s.gain = params.gain;
     s.rangeLow = params.rangeLow;
     s.rangeHigh = params.rangeHigh;
-    s.unit = params.unit;
     s.decimal = params.decimal;
     s.sht = params.sht;
 

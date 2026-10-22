@@ -62,17 +62,16 @@ export function installFakeWebSerial() {
           simulator.setParameter(id, {
             rangeLow: Number(rest[0]),
             rangeHigh: Number(rest[1]),
-            unit: Number(rest[2]),
-            decimal: Number(rest[3]),
-            sht: Number(rest[4]),
-            autoTune: Number(rest[5]),
-            offset: Number(rest[6]),
-            p: Number(rest[7]),
-            i: Number(rest[8]),
-            d: Number(rest[9]),
-            gain: Number(rest[10]),
-            al1: Number(rest[11]),
-            al2: Number(rest[12]),
+            decimal: Number(rest[2]),
+            sht: Number(rest[3]),
+            autoTune: Number(rest[4]),
+            offset: Number(rest[5]),
+            p: Number(rest[6]),
+            i: Number(rest[7]),
+            d: Number(rest[8]),
+            gain: Number(rest[9]),
+            al1: Number(rest[10]),
+            al2: Number(rest[11]),
           });
           break;
         case 'SET_ADVANCED':
