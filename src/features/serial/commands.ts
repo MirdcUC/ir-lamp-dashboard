@@ -18,9 +18,11 @@ export interface SetMainParams {
 /**
  * 「感測器設定」對應的 SET_PARAMETER 參數（v4 草案，原 `SET_SET` 已改名，見 SetMainParams 上方
  * 說明）。`M_A`/`SV` 移去 `SET_MAIN` 了，這裡不再出現；新增 `SHT`（輸入修正）欄位。
+ * `INT`（感測器類型）已拔掉，原位置改放量程上下限 `dSPL`/`dSPH`（🚧 見 docs/DEVICE-CHECKLIST.md H9）。
  */
 export interface SetParameterParams {
-  sensorType: number;   // INT，下拉選單索引（Pt/K/J/R/S/T/B/E/N/L）
+  rangeLow: number;     // dSPL，輸入量程下限（℃，一位小數）
+  rangeHigh: number;    // dSPH，輸入量程上限（℃，一位小數）
   unit: number;         // UNT，下拉選單索引（℃/℉）
   decimal: number;      // DP，下拉選單索引（無小數/一位小數）
   sht: number;           // SHT，輸入修正（感測器校正偏移量）-999~9999
@@ -84,13 +86,13 @@ const COMMAND_FIELD_NAMES: Record<string, readonly (readonly string[])[]> = {
     ['currentID', 'ON_OFF', 'SV', 'M_A'],
     ['currentID', 'ON_OFF', 'SV', 'M_A', 'NUN'],
   ],
-  SET_PARAMETER: [['currentID', 'INT', 'UNT', 'DP', 'SHT', 'AT', 'TU', 'P', 'I', 'D', 'GAIN', 'AL1', 'AL2']],
+  SET_PARAMETER: [['currentID', 'dSPL', 'dSPH', 'UNT', 'DP', 'SHT', 'AT', 'TU', 'P', 'I', 'D', 'GAIN', 'AL1', 'AL2']],
   SET_ADVANCED: [['currentID', 'newID', 'RS', 'BPS', 'BIT']],
 };
 
 /**
- * 把 `SET_PARAMETER(1,1,0,0,0,0,0,6,120,30,1.0,50,50)` 這種送出的指令行標註成
- * `currentID=1, INT=1, ...`，方便直接對照每個位置對應哪個欄位，不用另外開 PROTOCOL.md 數順序。
+ * 把 `SET_PARAMETER(1,0.0,400.0,0,0,0,0,0,6,120,30,1.0,50,50)` 這種送出的指令行標註成
+ * `currentID=1, dSPL=0.0, ...`，方便直接對照每個位置對應哪個欄位，不用另外開 PROTOCOL.md 數順序。
  * 認不出指令名稱、或參數數量跟 `COMMAND_FIELD_NAMES` 對不上時回傳 null。
  */
 export function describeCommand(line: string): string | null {
@@ -118,8 +120,9 @@ export const commandText = {
       ? `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode})` // 控制器 ON:0 / OFF:1
       : `SET_MAIN(${station},${p.on ? 0 : 1},${p.sv},${p.controlMode},${p.nUn})`,
 
+  // 量程上下限規格只允許一位小數，固定 toFixed(1) 避免浮點誤差多送位數
   setParameter: (station: number, p: SetParameterParams) =>
-    `SET_PARAMETER(${station},${p.sensorType},${p.unit},${p.decimal},${p.sht},${p.autoTune},${p.offset},${p.p},${p.i},${p.d},${p.gain},${p.al1},${p.al2})`,
+    `SET_PARAMETER(${station},${p.rangeLow.toFixed(1)},${p.rangeHigh.toFixed(1)},${p.unit},${p.decimal},${p.sht},${p.autoTune},${p.offset},${p.p},${p.i},${p.d},${p.gain},${p.al1},${p.al2})`,
 
   // 5 參數（拿掉 v3 的 M_A/NUN，見 SetAdvancedParams 上方說明）；BPS 送的是實際 bps，不是下拉選單索引
   setAdvanced: (station: number, p: SetAdvancedParams) =>

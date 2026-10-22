@@ -80,7 +80,7 @@ export const BAUD_RATE_VALUES = [9600, 19200, 38400] as const;
  */
 export const LAMP_FIELD_KEYS = [
   'NUN', 'AL1', 'AL2', 'AT', 'TU', 'P', 'I', 'D', 'GAIN',
-  'INT', 'UNT', 'DP', 'SHT', 'ID', 'RS', 'BPS', 'BIT',
+  'UNT', 'DP', 'SHT', 'dSPL', 'dSPH', 'ID', 'RS', 'BPS', 'BIT',
   'ON_OFF', 'M_A', 'SV', 'PV', 'UN', 'STATUS', 'ALARM',
 ] as const;
 
@@ -94,10 +94,11 @@ export const initLampStatus: LampStatus = {
   I: null,
   D: null,
   GAIN: null,
-  INT: null,
   UNT: null,
   DP: null,
   SHT: null,
+  dSPL: null,
+  dSPH: null,
   ID: null,
   RS: null,
   BPS: null,

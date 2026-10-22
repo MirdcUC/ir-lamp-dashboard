@@ -14,10 +14,11 @@ export interface LampStatus {
   I: number | null;      // 積分時間 0~3999 秒
   D: number | null;      // 微分時間 0~3999 秒
   GAIN: number | null;   // 輸出控制增益 0.0~9.9
-  INT: number | null;    // 感測器輸入類型，索引編碼（Pt/K/J/R/S/T/B/E/N/L）
   UNT: number | null;    // 溫度單位，索引編碼（℃/℉）
   DP: number | null;     // 小數點設定，索引編碼（無小數/一位小數）
   SHT: number | null;    // 輸入修正（感測器校正偏移量），-999~9999；v4 新欄位，見 docs/DEVICE-CHECKLIST.md H2，未經實機驗證
+  dSPL: number | null;   // 輸入量程下限（℃，一位小數）；欄位名稱待確認，見 docs/DEVICE-CHECKLIST.md H9
+  dSPH: number | null;   // 輸入量程上限（℃，一位小數）；同上
   ID: number | null;     // 設定站號 1~255
   RS: number | null;     // 通訊模式，索引編碼（RTU/ASCII）
   BPS: number | null;    // RS-485 通訊速度（實際 bps：9600/19200/38400）

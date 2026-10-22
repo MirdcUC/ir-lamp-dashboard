@@ -23,7 +23,8 @@ interface SimLamp {
   station: number;         // 進階設定的站號，決定回報行的 ID 欄位（見 lampState.ts 站號表）
   al1: number;
   al2: number;
-  sensorType: number;      // INT
+  rangeLow: number;        // dSPL
+  rangeHigh: number;       // dSPH
   unit: number;            // UNT
   decimal: number;         // DP
   sht: number;              // SHT（輸入修正），v4 新欄位
@@ -39,7 +40,7 @@ const SIM_AT_SECONDS = 20;   // AT 調諧持續秒數
 
 /**
  * 組出 parenField23Adapter 看得懂的一行；PV/SV/UN/AT/P/I/D 取自實際物理模擬，
- * 其餘設定類欄位（AL1/AL2/INT/UNT/DP/SHT/TU/GAIN/RS/BPS/BIT/M_A/NUN/ID）
+ * 其餘設定類欄位（AL1/AL2/dSPL/dSPH/UNT/DP/SHT/TU/GAIN/RS/BPS/BIT/M_A/NUN/ID）
  * 原樣回報 SET_MAIN/SET_PARAMETER/SET_ADVANCED 最後一次寫入的值，本身不影響物理曲線。
  */
 function buildFields(s: SimLamp): Record<string, string> {
@@ -62,10 +63,11 @@ function buildFields(s: SimLamp): Record<string, string> {
     I: String(s.pid.i),
     D: String(s.pid.d),
     GAIN: s.gain.toFixed(1),
-    INT: String(s.sensorType),
     UNT: String(s.unit),
     DP: String(s.decimal),
     SHT: String(s.sht),
+    dSPL: s.rangeLow.toFixed(1),
+    dSPH: s.rangeHigh.toFixed(1),
     ID: String(s.station), // 站號可能被 SET_ADVANCED 改掉，要回報目前站號才能讓 lampState 的站號表對得上
     RS: String(s.commMode),
     BPS: String(BAUD_RATE_VALUES[s.baudRate] ?? 9600),
@@ -152,7 +154,8 @@ export function createSimulator(options: SimulatorOptions) {
         station: id,
         al1: 50,
         al2: 50,
-        sensorType: 0,
+        rangeLow: 0,
+        rangeHigh: 0,
         unit: 0,
         decimal: 0,
         sht: 0,
@@ -203,7 +206,8 @@ export function createSimulator(options: SimulatorOptions) {
     s.offset = params.offset;
     s.pid = { p: params.p, i: params.i, d: params.d };
     s.gain = params.gain;
-    s.sensorType = params.sensorType;
+    s.rangeLow = params.rangeLow;
+    s.rangeHigh = params.rangeHigh;
     s.unit = params.unit;
     s.decimal = params.decimal;
     s.sht = params.sht;

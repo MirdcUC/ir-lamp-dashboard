@@ -199,7 +199,7 @@ export const useSerialStore = defineStore('serial', () => {
     );
     if (sent) {
       const expected = [
-        params.sensorType, params.unit, params.decimal, params.sht,
+        params.rangeLow, params.rangeHigh, params.unit, params.decimal, params.sht,
         params.autoTune, params.offset, params.p, params.i,
         params.d, params.gain, params.al1, params.al2,
       ];

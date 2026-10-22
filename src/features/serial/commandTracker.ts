@@ -60,7 +60,7 @@ function reportedValues(type: CommandType, lamp: LampStatus | undefined): (numbe
       return [lamp.ON_OFF, lamp.SV, lamp.M_A, lamp.NUN];
     // 欄位順序對應 SET_PARAMETER 指令參數；設定站號（currentID）不比對
     case 'setParameter':
-      return [lamp.INT, lamp.UNT, lamp.DP, lamp.SHT, lamp.AT, lamp.TU, lamp.P, lamp.I, lamp.D, lamp.GAIN, lamp.AL1, lamp.AL2];
+      return [lamp.dSPL, lamp.dSPH, lamp.UNT, lamp.DP, lamp.SHT, lamp.AT, lamp.TU, lamp.P, lamp.I, lamp.D, lamp.GAIN, lamp.AL1, lamp.AL2];
     case 'setAdvanced':
       // 不做 read-back 比對，只信任 SET_OK/SET_ERROR（見 applyResult）——2026-08-14 現場實測
       // 發現：SET_ADVANCED 現在會把 newStation/RS/BPS/BIT 原樣送回去，這種「沒有要求真的變更」

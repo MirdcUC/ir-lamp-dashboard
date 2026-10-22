@@ -9,10 +9,14 @@
       <i class="frame-corner corner-bl" /><i class="frame-corner corner-br" />
       <template #header><span class="font-bold section-head"><span class="tech-tag">01</span> 感測器設定</span></template>
       <el-form label-width="110px">
-        <el-form-item label="感測器類型">
-          <el-select v-model="form.sensorType" class="w-full max-w-260px">
-            <el-option v-for="opt in SENSOR_TYPES" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
+        <!-- 量程上下限規格固定 ℃、一位小數，不跟著上面的溫度單位/小數點設定走；範圍尚無規格，暫用跟 SV 相同的 -999~9999 -->
+        <el-form-item label="輸入量程下限">
+          <el-input-number v-model="form.rangeLow" :min="-999" :max="9999" :step="0.1" :precision="1" class="w-full max-w-260px" />
+          <span class="unit-suffix">℃</span>
+        </el-form-item>
+        <el-form-item label="輸入量程上限">
+          <el-input-number v-model="form.rangeHigh" :min="-999" :max="9999" :step="0.1" :precision="1" class="w-full max-w-260px" />
+          <span class="unit-suffix">℃</span>
         </el-form-item>
         <el-form-item label="溫度單位">
           <el-select v-model="form.unit" class="w-full max-w-260px">
@@ -87,7 +91,6 @@ import type { SetParameterParams } from '@/features/serial/commands';
 const store = useSerialStore();
 
 // 兩個下拉選單第 1 項一律是 0，以此類推，見 產線/紅外線控制模組_畫面.md「共同規則」
-const SENSOR_TYPES = ['Pt', 'K', 'J', 'R', 'S', 'T', 'B', 'E', 'N', 'L'].map((label, value) => ({ label, value }));
 const TEMP_UNITS = ['℃', '℉'].map((label, value) => ({ label, value }));
 const DECIMAL_OPTIONS = ['無小數', '一位小數'].map((label, value) => ({ label, value }));
 const AUTO_TUNE_OPTIONS = ['Control', 'Auto-Tuning'].map((label, value) => ({ label, value }));
@@ -97,7 +100,8 @@ const activeTab = activeLampId;
 const form = reactive<SetParameterParams>({
   al1: 0,
   al2: 0,
-  sensorType: 0,
+  rangeLow: 0,
+  rangeHigh: 0,
   unit: 0,
   decimal: 0,
   sht: 0,
@@ -118,7 +122,8 @@ const prefillFromDevice = (id: number) => {
   Object.assign(form, {
     al1: status?.AL1 ?? 0,
     al2: status?.AL2 ?? 0,
-    sensorType: status?.INT ?? 0,
+    rangeLow: status?.dSPL ?? 0,
+    rangeHigh: status?.dSPH ?? 0,
     unit: status?.UNT ?? 0,
     decimal: status?.DP ?? 0,
     sht: status?.SHT ?? 0,
@@ -176,6 +181,11 @@ const save = () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.unit-suffix {
+  margin-left: 8px;
+  color: var(--hmi-text-dim);
 }
 
 .hint-note {
