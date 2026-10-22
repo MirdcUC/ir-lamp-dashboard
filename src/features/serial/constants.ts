@@ -25,13 +25,8 @@ export const SV_CONFIRM_DELTA = 20;
 /** 輸出 % 達到這個值視為接近滿載，bar graph 高段轉紅 */
 export const OUT_HIGH_PERCENT = 80;
 
-/** UNT 索引 → 顯示單位；0=℃、1=℉，見 PROTOCOL.md 第 11 項 */
-export const TEMP_UNIT_LABELS = ['°C', '°F'] as const;
-
-/** UNT 為 null（尚未收到資料）時預設顯示 °C */
-export function tempUnitLabel(unt: number | null | undefined): string {
-  return TEMP_UNIT_LABELS[unt ?? 0] ?? TEMP_UNIT_LABELS[0];
-}
+// UNT 已從協定拿掉，溫度一律以 ℃ 顯示，見 docs/DEVICE-CHECKLIST.md H10
+export const TEMP_UNIT_LABEL = '°C';
 
 /**
  * 依 DP（0=無小數、1=一位小數，見 PROTOCOL.md 第 12 項）格式化 PV/SV 顯示。
@@ -80,7 +75,7 @@ export const BAUD_RATE_VALUES = [9600, 19200, 38400] as const;
  */
 export const LAMP_FIELD_KEYS = [
   'NUN', 'AL1', 'AL2', 'AT', 'TU', 'P', 'I', 'D', 'GAIN',
-  'UNT', 'DP', 'SHT', 'dSPL', 'dSPH', 'ID', 'RS', 'BPS', 'BIT',
+  'DP', 'SHT', 'dSPL', 'dSPH', 'ID', 'RS', 'BPS', 'BIT',
   'ON_OFF', 'M_A', 'SV', 'PV', 'UN', 'STATUS', 'ALARM',
 ] as const;
 
@@ -94,7 +89,6 @@ export const initLampStatus: LampStatus = {
   I: null,
   D: null,
   GAIN: null,
-  UNT: null,
   DP: null,
   SHT: null,
   dSPL: null,

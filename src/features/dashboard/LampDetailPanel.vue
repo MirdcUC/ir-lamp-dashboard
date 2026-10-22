@@ -99,7 +99,7 @@ import { computed, reactive, watch } from 'vue';
 import { useSerialStore } from '@/features/serial/store';
 import { activeLampId } from '@/features/serial/activeLamp';
 import { STATUS_BITS, activeAlarmCodes, hasBit } from '@/features/serial/alarmStatus';
-import { tempUnitLabel, SV_MIN, SV_MAX } from '@/features/serial/constants';
+import { TEMP_UNIT_LABEL, SV_MIN, SV_MAX } from '@/features/serial/constants';
 import { commandHintView } from '@/shared/settingsShared';
 import SaveBar from '@/shared/components/SaveBar.vue';
 
@@ -107,7 +107,7 @@ const store = useSerialStore();
 
 const active = computed(() => store.isConnected || store.isSimulating);
 const status = computed(() => store.lamps[activeLampId.value]);
-const unitLabel = computed(() => tempUnitLabel(status.value?.UNT));
+const unitLabel = TEMP_UNIT_LABEL;
 // CommandType 'main' 涵蓋 Run/Stop、設定溫度、控制模式/手動輸出量，見 commandTracker.ts 的說明
 const runCommandView = computed(() => commandHintView(store.commands[activeLampId.value]?.main));
 
@@ -186,7 +186,7 @@ const alarmThreshold = (al: number | null | undefined) =>
 const al1Threshold = computed(() => alarmThreshold(status.value?.AL1));
 const al2Threshold = computed(() => alarmThreshold(status.value?.AL2));
 
-const formatTemp = (v: number) => `${v.toFixed(svPrecision.value)}${unitLabel.value}`;
+const formatTemp = (v: number) => `${v.toFixed(svPrecision.value)}${unitLabel}`;
 
 // 警報溫度卡片下面那行小字（30+10），門檻結果已經是卡片的大數字，這裡不重複寫「=40°C」
 const alarmFormulaShort = (al: number | null | undefined) => {

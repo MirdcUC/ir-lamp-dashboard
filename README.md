@@ -135,7 +135,7 @@ FOTEK 手冊與韌體端待確認事項見 [DEVICE-CHECKLIST.md](./docs/DEVICE-C
 | 指令 | 驗證方式 |
 |------|----------|
 | `SET_MAIN`（主畫面的 Run/Stop、設定溫度、控制模式/手動輸出量共用） | 比對回報的 `ON_OFF`/`SV`/`M_A`/`NUN` 四個欄位全部相符才算 |
-| `SET_PARAMETER`（原 `SET_SET`） | `INT`/`UNT`/`DP`/`SHT`/`AT`/`TU`/`P`/`I`/`D`/`GAIN`/`AL1`/`AL2` 十二個欄位全部相符才算 |
+| `SET_PARAMETER`（原 `SET_SET`） | `dSPL`/`dSPH`/`DP`/`SHT`/`AT`/`TU`/`P`/`I`/`D`/`GAIN`/`AL1`/`AL2` 十二個欄位全部相符才算 |
 | `SET_ADVANCED` | 不做 read-back 比對（`newStation`/`RS`/`BPS`/`BIT` 常常沒有要求變更，比對沒有意義），只信任韌體回的 `SET_OK`/`SET_ERROR` |
 
 5 秒內未相符（且沒收到 `SET_OK`/`SET_ERROR`）會標為「裝置未確認，結果未知」——不等於裝置沒

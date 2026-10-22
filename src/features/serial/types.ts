@@ -14,7 +14,6 @@ export interface LampStatus {
   I: number | null;      // 積分時間 0~3999 秒
   D: number | null;      // 微分時間 0~3999 秒
   GAIN: number | null;   // 輸出控制增益 0.0~9.9
-  UNT: number | null;    // 溫度單位，索引編碼（℃/℉）
   DP: number | null;     // 小數點設定，索引編碼（無小數/一位小數）
   SHT: number | null;    // 輸入修正（感測器校正偏移量），-999~9999；v4 新欄位，見 docs/DEVICE-CHECKLIST.md H2，未經實機驗證
   dSPL: number | null;   // 輸入量程下限（℃，一位小數）；欄位名稱待確認，見 docs/DEVICE-CHECKLIST.md H9
@@ -25,8 +24,8 @@ export interface LampStatus {
   BIT: number | null;    // RS-485 資料格式，索引編碼（7O1/7E1/8N1/8O1/8E1/8N2）
   ON_OFF: number | null; // 控制器啟停：0=ON 1=OFF
   M_A: number | null;    // 自動／手動模式：0=AUTO 1=MANUAL
-  SV: number | null;     // 設定值，依 UNT/DP 解讀
-  PV: number | null;     // 目前製程值（Read Only），依 UNT/DP 解讀
+  SV: number | null;     // 設定值，依 DP 解讀（單位固定 ℃）
+  PV: number | null;     // 目前製程值（Read Only），依 DP 解讀（單位固定 ℃）
   UN: number | null;     // 目前實際輸出量 0~100%（Read Only）
   STATUS: number | null; // Bit Mask（Read Only）：0x1=OUT1 0x100=AL1 0x1000=AL2（實測值，見 alarmStatus.ts）；OUT2 已確認拿掉
   ALARM: number | null;  // Bit Mask（Read Only）：0x1=FFF 0x2=--- 0x4=HtEr 0x8=OhEr，見 statusBits.ts

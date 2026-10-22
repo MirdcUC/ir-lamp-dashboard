@@ -18,7 +18,7 @@ export interface SetMainParams {
 /**
  * 「感測器設定」對應的 SET_PARAMETER 參數（v4 草案，原 `SET_SET` 已改名，見 SetMainParams 上方
  * 說明）。`M_A`/`SV` 移去 `SET_MAIN` 了，這裡不再出現；新增 `SHT`（輸入修正）欄位。
- * `INT`（感測器類型）已拔掉，原位置改放量程上下限 `dSPL`/`dSPH`；`UNT` 也不再由這個指令寫入（🚧 見 docs/DEVICE-CHECKLIST.md H9、H10）。
+ * `INT`（感測器類型）已拔掉，原位置改放量程上下限 `dSPL`/`dSPH`；`UNT` 也整個拿掉、溫度固定 ℃（🚧 見 docs/DEVICE-CHECKLIST.md H9、H10）。
  */
 export interface SetParameterParams {
   rangeLow: number;     // dSPL，輸入量程下限（℃，一位小數）

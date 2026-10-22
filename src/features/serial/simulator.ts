@@ -25,7 +25,6 @@ interface SimLamp {
   al2: number;
   rangeLow: number;        // dSPL
   rangeHigh: number;       // dSPH
-  unit: number;            // UNT，SET_PARAMETER 不再寫入，維持初始值原樣回報
   decimal: number;         // DP
   sht: number;              // SHT（輸入修正），v4 新欄位
   offset: number;          // TU
@@ -40,7 +39,7 @@ const SIM_AT_SECONDS = 20;   // AT 調諧持續秒數
 
 /**
  * 組出 parenField23Adapter 看得懂的一行；PV/SV/UN/AT/P/I/D 取自實際物理模擬，
- * 其餘設定類欄位（AL1/AL2/dSPL/dSPH/UNT/DP/SHT/TU/GAIN/RS/BPS/BIT/M_A/NUN/ID）
+ * 其餘設定類欄位（AL1/AL2/dSPL/dSPH/DP/SHT/TU/GAIN/RS/BPS/BIT/M_A/NUN/ID）
  * 原樣回報 SET_MAIN/SET_PARAMETER/SET_ADVANCED 最後一次寫入的值，本身不影響物理曲線。
  */
 function buildFields(s: SimLamp): Record<string, string> {
@@ -63,7 +62,6 @@ function buildFields(s: SimLamp): Record<string, string> {
     I: String(s.pid.i),
     D: String(s.pid.d),
     GAIN: s.gain.toFixed(1),
-    UNT: String(s.unit),
     DP: String(s.decimal),
     SHT: String(s.sht),
     dSPL: s.rangeLow.toFixed(1),
@@ -156,7 +154,6 @@ export function createSimulator(options: SimulatorOptions) {
         al2: 50,
         rangeLow: 0,
         rangeHigh: 0,
-        unit: 0,
         decimal: 0,
         sht: 0,
         offset: 0,

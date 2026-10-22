@@ -61,7 +61,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useSerialStore } from '@/features/serial/store';
-import { OUT_HIGH_PERCENT, tempUnitLabel, formatTempValue } from '@/features/serial/constants';
+import { OUT_HIGH_PERCENT, TEMP_UNIT_LABEL, formatTempValue } from '@/features/serial/constants';
 import { STATUS_BITS, hasBit } from '@/features/serial/alarmStatus';
 import type { LampConnection } from '@/features/serial/types';
 
@@ -78,7 +78,7 @@ const al2On = computed(() => hasBit(status.value.STATUS, STATUS_BITS.AL2));
 const hasAlarm = computed(() => al1On.value || al2On.value);
 
 const connection = computed<LampConnection>(() => store.connections[props.id] ?? 'offline');
-const unitLabel = computed(() => tempUnitLabel(status.value.UNT));
+const unitLabel = TEMP_UNIT_LABEL;
 
 const alarmText = computed(() =>
   [al1On.value ? 'AL1' : null, al2On.value ? 'AL2' : null].filter(Boolean).join('・') + ' 警報',
