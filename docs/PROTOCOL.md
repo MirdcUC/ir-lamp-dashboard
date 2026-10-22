@@ -87,10 +87,12 @@ BPS  RAW=0   -> BPS:9600
 | 7 | `I` | Integral time | R/W | 0~3999 秒 | PID 積分時間 |
 | 8 | `D` | Derivative time | R/W | 0~3999 秒 | PID 微分時間 |
 | 9 | `GAIN` | Gain | R/W | 0.0~9.9 | 輸出控制增益（RAW×0.1） |
-| 10 | `INT` | Input type | R/W | 0=Pt,1=K,2=J,3=R,4=S,5=T,6=B,7=E,8=N,9=L | 感測器輸入類型（本專案實機為 K 型，`INT:1`） |
-| 11 | `UNT` | Unit selecting | R/W | 0=°C, 1=°F | 溫度單位，影響 SV/PV/AL1/AL2 的解讀 |
+| 10 | ~~`INT`~~ | Input type | — | — | **已拔掉**（2026-10-22，見 `docs/DEVICE-CHECKLIST.md` H9）：原為感測器輸入類型，改由下方 `dSPL`/`dSPH` 取代；舊韌體回報的 `INT` 解析器會直接略過 |
+| 11 | ~~`UNT`~~ | Unit selecting | — | — | **已拔掉**（2026-10-22，見 `docs/DEVICE-CHECKLIST.md` H10）：溫度一律以 ℃ 顯示，指令不再寫入、回報行的 `UNT` 解析器也會直接略過 |
 | 12 | `DP` | Decimal point setting | R/W | 0=無小數, 1=一位小數 | 小數點設定 |
 | 13 | `SHT` | Input correction | R/W | -999~9999 | **v4 新欄位**（🚧 未經實機驗證）：輸入修正，推測是感測器校正偏移量；暫存器位址、精度、寫入行為都待跟韌體工程師確認，見 `docs/DEVICE-CHECKLIST.md` H2 |
+| 13a | `dSPL` | Input range low | R/W | ℃，一位小數；範圍尚無規格 | **新欄位**（🚧 未經實機驗證）：輸入量程下限，固定 ℃ 不受 `DP` 影響，見 H9 |
+| 13b | `dSPH` | Input range high | R/W | ℃，一位小數；範圍尚無規格 | **新欄位**（🚧 未經實機驗證）：輸入量程上限，同上 |
 | 14 | `ID` | Station No. | R/W | 1~255 | Modbus 站號；本專案七台用 1~7 |
 | 15 | `RS` | Communication mode | R/W | 0=RTU, 1=ASCII | 本專案固定 RTU |
 | 16 | `BPS` | Baud rate | R/W | 9600/19200/38400 | NT-48L-RS 的 RS-485 通訊速度（實際 bps，不是 Master↔PC 的 Serial 速度） |
@@ -151,18 +153,18 @@ SET_MAIN(currentID,ON_OFF,SV,M_A,NUN)    // M_A=1（手動）
 ### SET_PARAMETER — 對應「設定畫面」的感測器/PID/警報/輸入修正（v3 稱 `SET_SET`）
 
 ```text
-SET_PARAMETER(currentID,INT,UNT,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2)
+SET_PARAMETER(currentID,dSPL,dSPH,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2)
 ```
 
-例：`SET_PARAMETER(1,1,0,0,0,0,0,6,120,30,1.0,50,50)`
+例：`SET_PARAMETER(1,0.0,400.0,0,0,0,0,6,120,30,1.0,50,50)`
 
 位置定義：
 
 ```text
-0=currentID 1=INT 2=UNT 3=DP 4=SHT 5=AT 6=TU 7=P 8=I 9=D 10=GAIN 11=AL1 12=AL2
+0=currentID 1=dSPL 2=dSPH 3=DP 4=SHT 5=AT 6=TU 7=P 8=I 9=D 10=GAIN 11=AL1 12=AL2
 ```
 
-`M_A`/`SV` 不在這個指令裡了（見上方 SET_MAIN）。`SHT` 是 v4 新欄位，範圍與寫入行為都待確認。
+`M_A`/`SV` 不在這個指令裡了（見上方 SET_MAIN）。`SHT` 是 v4 新欄位，範圍與寫入行為都待確認。`INT` 已拔掉，原位置改放 `dSPL`/`dSPH`（一律送一位小數），這個位置安排是前端假設，待韌體確認，見 `docs/DEVICE-CHECKLIST.md` H9。`UNT` 也已從這個指令拿掉，見 H10。
 
 ### SET_ADVANCED — 對應「進階設定畫面」的通訊參數
 

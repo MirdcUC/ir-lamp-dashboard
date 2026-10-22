@@ -60,8 +60,8 @@ export function installFakeWebSerial() {
           break;
         case 'SET_PARAMETER':
           simulator.setParameter(id, {
-            sensorType: Number(rest[0]),
-            unit: Number(rest[1]),
+            rangeLow: Number(rest[0]),
+            rangeHigh: Number(rest[1]),
             decimal: Number(rest[2]),
             sht: Number(rest[3]),
             autoTune: Number(rest[4]),

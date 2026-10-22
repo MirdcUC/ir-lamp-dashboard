@@ -31,7 +31,7 @@ function wire() {
 // 見 commands.ts 的 SetMainParams/SetParameterParams 說明。
 const DEFAULT_PARAMETER: Parameters<ReturnType<typeof createSimulator>['setParameter']>[1] = {
   al1: 50, al2: 50, autoTune: 0, offset: 0, p: 5, i: 120, d: 30, gain: 1.0,
-  sensorType: 1, unit: 0, decimal: 0, sht: 0,
+  rangeLow: 0, rangeHigh: 400, decimal: 0, sht: 0,
 };
 
 describe('模擬器 → 解析 → 燈管狀態', () => {
@@ -149,11 +149,22 @@ describe('SET_OK / SET_ERROR 回覆行', () => {
     simulator.start(false);
     vi.advanceTimersByTime(1000);
 
-    tracker.start(2, 'setParameter', [1, 0, 0, 0, 0, 0, 5, 120, 30, 1, 50, 50], 'SET_PARAMETER', Date.now(), false);
+    tracker.start(2, 'setParameter', [0, 400, 0, 0, 0, 0, 5, 120, 30, 1, 50, 50], 'SET_PARAMETER', Date.now(), false);
     simulator.setParameter(2, DEFAULT_PARAMETER);
     vi.advanceTimersByTime(0);
 
     expect(tracker.commands.value[2]?.setParameter?.status).toBe('confirmed');
+    simulator.stop();
+  });
+
+  it('SET_PARAMETER 寫入的量程上下限會由回報行的 dSPL/dSPH 反映出來', () => {
+    const { state, simulator } = wire();
+    simulator.start(false);
+    simulator.setParameter(2, { ...DEFAULT_PARAMETER, rangeLow: -5.5, rangeHigh: 350.5 });
+    vi.advanceTimersByTime(1000);
+
+    expect(state.lamps.value[2]?.dSPL).toBe(-5.5);
+    expect(state.lamps.value[2]?.dSPH).toBe(350.5);
     simulator.stop();
   });
 

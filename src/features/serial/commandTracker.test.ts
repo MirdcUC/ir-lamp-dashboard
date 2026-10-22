@@ -118,18 +118,18 @@ describe('指令 read-back 驗證', () => {
 
   it('SET_PARAMETER 十二個欄位要全部相符才算確認', () => {
     const tracker = createCommandTracker();
-    // 順序對應 commandText.setParameter：INT,UNT,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2
-    const expected = [1, 0, 0, 0, 0, 0, 5, 120, 30, 1.0, 50, 50];
+    // 順序對應 commandText.setParameter：dSPL,dSPH,DP,SHT,AT,TU,P,I,D,GAIN,AL1,AL2
+    const expected = [0, 400, 0, 0, 0, 0, 5, 120, 30, 1.0, 50, 50];
     tracker.start(1, 'setParameter', expected, 'SET_PARAMETER', T0, false);
 
     tracker.verify(
-      reported({ 1: { INT: 1, UNT: 0, DP: 0, SHT: 0, AT: 0, TU: 0, P: 5, I: 120, D: 30, GAIN: 0.5, AL1: 50, AL2: 50 } }),
+      reported({ 1: { dSPL: 0, dSPH: 400, DP: 0, SHT: 0, AT: 0, TU: 0, P: 5, I: 120, D: 30, GAIN: 0.5, AL1: 50, AL2: 50 } }),
       T0 + 1000,
     );
     expect(tracker.commands.value[1]?.setParameter?.status).toBe('pending'); // GAIN 差超過容差
 
     tracker.verify(
-      reported({ 1: { INT: 1, UNT: 0, DP: 0, SHT: 0, AT: 0, TU: 0, P: 5, I: 120, D: 30, GAIN: 1.0, AL1: 50, AL2: 50 } }),
+      reported({ 1: { dSPL: 0, dSPH: 400, DP: 0, SHT: 0, AT: 0, TU: 0, P: 5, I: 120, D: 30, GAIN: 1.0, AL1: 50, AL2: 50 } }),
       T0 + 2000,
     );
     expect(tracker.commands.value[1]?.setParameter?.status).toBe('confirmed');
